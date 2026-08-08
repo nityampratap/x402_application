@@ -22,7 +22,7 @@ class X402Client:
         amount_usdc = 0.10
         asset_address = self.settings.USDC_CONTRACT_ADDRESS
         network = "base-sepolia"
-        pay_to = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+        pay_to = self.settings.recipient_address
         scheme = "exact"
 
         if payment_header:

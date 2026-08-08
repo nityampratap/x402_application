@@ -20,7 +20,7 @@ routes = {
         "accepts": [
             {
                 "scheme": "exact",
-                "payTo": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                "payTo": "0xcF107c0D3537878010Df6b8B8d439a92D08AD18d",
                 "price": "$0.001",
                 "network": "eip155:84532"
             }

@@ -17,7 +17,19 @@ class Settings(BaseSettings):
     RPC_URL: str = Field(default="https://sepolia.base.org")
     USDC_CONTRACT_ADDRESS: str = Field(description="USDC Contract Address on Base Sepolia")
     WALLET_PRIVATE_KEY: Optional[str] = Field(default=None)
-    X402_FACILITATOR_URL: str = Field(default="https://x402.org/api")
+    PAYMENT_RECIPIENT_ADDRESS: Optional[str] = Field(default=None, description="Key-controlled seller wallet address for receiving x402 micropayments")
+
+    @property
+    def recipient_address(self) -> str:
+        if self.PAYMENT_RECIPIENT_ADDRESS:
+            return self.PAYMENT_RECIPIENT_ADDRESS
+        if self.WALLET_PRIVATE_KEY:
+            try:
+                from eth_account import Account
+                return Account.from_key(self.WALLET_PRIVATE_KEY).address
+            except Exception:
+                pass
+        return "0xcF107c0D3537878010Df6b8B8d439a92D08AD18d"
 
     @property
     def cors_origins_list(self) -> List[str]:

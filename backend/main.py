@@ -50,7 +50,7 @@ async def mock_x402_registry(request: Request, q: str = ""):
     # If no X-PAYMENT authorization header present, return HTTP 402 Payment Required
     if not payment_header:
         headers = {
-            "X-PAYMENT-REQUIRED": f"amount=0.15,payTo=0x742d35Cc6634C0532925a3b844Bc454e4438f44e,asset={settings.USDC_CONTRACT_ADDRESS},network=base-sepolia"
+            "X-PAYMENT-REQUIRED": f"amount=0.15,payTo={settings.recipient_address},asset={settings.USDC_CONTRACT_ADDRESS},network=base-sepolia"
         }
         return Response(
             content='{"error": "PAYMENT_REQUIRED", "message": "Paywalled record access requires 0.15 USDC via x402 protocol"}',
