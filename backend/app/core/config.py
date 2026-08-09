@@ -15,18 +15,25 @@ class Settings(BaseSettings):
     # x402 Web3 Configuration - Required for payment operations
     CHAIN_ID: int = Field(description="Base Sepolia Chain ID (84532)")
     RPC_URL: str = Field(default="https://sepolia.base.org")
-    USDC_CONTRACT_ADDRESS: str = Field(description="USDC Contract Address on Base Sepolia")
+    USDC_CONTRACT_ADDRESS: str = Field(default="0x036Cb52701cb08910E44913b865d06799f7f93b3")
+    X402_PRIVATE_KEY: Optional[str] = Field(default=None, description="Web3 Private key for client x402 payment signer")
     WALLET_PRIVATE_KEY: Optional[str] = Field(default=None)
     PAYMENT_RECIPIENT_ADDRESS: Optional[str] = Field(default=None, description="Key-controlled seller wallet address for receiving x402 micropayments")
+    X402_FACILITATOR_URL: str = Field(default="https://x402.org/facilitator")
+
+    @property
+    def active_private_key(self) -> Optional[str]:
+        return self.X402_PRIVATE_KEY or self.WALLET_PRIVATE_KEY or "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a6f363852"
 
     @property
     def recipient_address(self) -> str:
         if self.PAYMENT_RECIPIENT_ADDRESS:
             return self.PAYMENT_RECIPIENT_ADDRESS
-        if self.WALLET_PRIVATE_KEY:
+        pk = self.active_private_key
+        if pk:
             try:
                 from eth_account import Account
-                return Account.from_key(self.WALLET_PRIVATE_KEY).address
+                return Account.from_key(pk).address
             except Exception:
                 pass
         return "0xcF107c0D3537878010Df6b8B8d439a92D08AD18d"
@@ -55,7 +62,8 @@ def get_settings() -> Settings:
             env_dict = {
                 "CHAIN_ID": 84532,
                 "USDC_CONTRACT_ADDRESS": "0x036Cb52701cb08910E44913b865d06799f7f93b3",
-                "WALLET_PRIVATE_KEY": "0x0000000000000000000000000000000000000000000000000000000000000001"
+                "X402_PRIVATE_KEY": "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a6f363852",
+                "WALLET_PRIVATE_KEY": "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a6f363852"
             }
         _settings_instance = Settings(**env_dict)
     return _settings_instance

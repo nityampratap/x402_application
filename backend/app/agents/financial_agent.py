@@ -13,32 +13,38 @@ class FinancialRegistryAgent:
     async def investigate(self, sub_question: str, context: Dict[str, Any]) -> AgentResult:
         start_time = time.time()
         
-        # Target x402 paywalled endpoint (e.g. local backend test mock endpoint)
-        target_url = context.get("target_url") or "http://localhost:8000/api/v1/mock-x402-registry"
+        # Target real x402 paywalled endpoint protected by payment_middleware
+        target_url = context.get("target_url") or "http://localhost:8000/api/v1/registry"
         
-        # Invoke x402 paid GET call
+        # Invoke real x402 paid GET call via SDK wrapHttpxWithPayment
         res = await self.x402_client.paid_get(target_url, params={"q": sub_question})
         
         exec_ms = int((time.time() - start_time) * 1000)
 
         if res.success:
+            data = res.data or {}
+            rec_details = data.get("record_details", {})
+            filing_id = data.get("filing_id", "N/A")
+            provider = data.get("provider", "Registry Provider")
+
             evidence_summary = (
-                f"Verified official corporate filing record via x402 paywalled API. "
-                f"Transaction record confirmed for query '{sub_question}'."
+                f"{provider} Record (Filing ID: {filing_id}): Entity status '{rec_details.get('status', 'ACTIVE')}', "
+                f"incorporation date '{rec_details.get('incorporation_date', 'N/A')}', M&A filing confirmed for '{sub_question}'."
             )
+
             return AgentResult(
                 agent_name=self.name,
                 agent_type=self.agent_type,
                 sub_question=sub_question,
                 success=True,
                 evidence_summary=evidence_summary,
-                raw_data=res.data or {},
+                raw_data=data,
                 source_url=target_url,
                 is_paid_source=True,
                 reliability_score=0.96,
                 execution_time_ms=exec_ms,
                 tx_hash=res.tx_hash,
-                amount_usdc=res.amount_usdc or 0.15
+                amount_usdc=res.amount_usdc or 0.001
             )
         else:
             error_msg = f"x402 Payment/Request Failed ({res.status.value}): {res.error_details}"
@@ -54,5 +60,5 @@ class FinancialRegistryAgent:
                 reliability_score=0.0,
                 error_message=error_msg,
                 execution_time_ms=exec_ms,
-                amount_usdc=res.amount_usdc or 0.15
+                amount_usdc=res.amount_usdc or 0.001
             )
