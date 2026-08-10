@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.db.models import Investigation, AgentRun, EvidenceItem, PaymentLog, InvestigationStatus, PaymentStatus
 from app.orchestration.planner import get_planner
+from app.orchestration.budgeting import get_budget_selector
 from app.agents.registry import AgentRegistry
 from app.x402.client import X402Client
 from app.scoring.confidence import get_confidence_scorer
@@ -14,6 +15,7 @@ class WorkflowOrchestrator:
     def __init__(self, db: AsyncSession, event_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None):
         self.db = db
         self.planner = get_planner()
+        self.budget_selector = get_budget_selector()
         self.scorer = get_confidence_scorer()
         self.event_callback = event_callback
 
@@ -46,20 +48,62 @@ class WorkflowOrchestrator:
         # 2. Planning Node
         plan = await self.planner.create_plan(investigation.claim_text)
         
+        # 2b. Evidence Budgeting & 0/1 Knapsack Optimization Node
+        scored_candidates = await self.budget_selector.estimate_value_scores(
+            claim=investigation.claim_text, 
+            candidates=plan.sub_questions
+        )
+
+        selected_items, skipped_items = self.budget_selector.select_knapsack(
+            candidates=scored_candidates, 
+            max_budget_usdc=investigation.max_budget_usdc
+        )
+
+        # Print budget decision log to stdout for real run visibility
+        table_log = self.budget_selector.format_budget_decision_table(
+            claim=investigation.claim_text,
+            max_budget_usdc=investigation.max_budget_usdc,
+            selected=selected_items,
+            skipped=skipped_items
+        )
+        print("\n" + table_log + "\n")
+
+        # Emit SSE event for Budget Allocation
+        await self.emit_event("BUDGET_ALLOCATION", investigation_id, {
+            "max_budget_usdc": investigation.max_budget_usdc,
+            "selected_count": len(selected_items),
+            "skipped_count": len(skipped_items),
+            "selected_items": selected_items,
+            "skipped_items": skipped_items
+        })
+
         # Status: AGENT_DISPATCH
         investigation.status = InvestigationStatus.AGENT_DISPATCH
         await self.db.commit()
-        await self.emit_event("STATE_CHANGE", investigation_id, {"status": "AGENT_DISPATCH", "sub_questions_count": len(plan.sub_questions)})
+        await self.emit_event("STATE_CHANGE", investigation_id, {
+            "status": "AGENT_DISPATCH", 
+            "selected_agents_count": len(selected_items),
+            "skipped_agents_count": len(skipped_items)
+        })
 
-        # Create AgentRun DB entries
+        # Create AgentRun DB entries for all items (selected and skipped)
         agent_runs: List[AgentRun] = []
-        for sq in plan.sub_questions:
+        all_allocated = selected_items + skipped_items
+        all_allocated.sort(key=lambda x: x.get("index", 0))
+
+        for item in all_allocated:
+            is_selected = (item["selection_status"] == "SELECTED")
             ar = AgentRun(
                 investigation_id=investigation_id,
-                agent_name=f"{sq['agent_type'].title()}Agent",
-                agent_type=sq["agent_type"],
-                sub_question=sq["question"],
-                status="RUNNING"
+                agent_name=f"{item['agent_type'].title()}Agent",
+                agent_type=item["agent_type"],
+                sub_question=item["question"],
+                status="RUNNING" if is_selected else "SKIPPED",
+                estimated_value=item["value_score"],
+                estimated_cost_usdc=item["cost_usdc"],
+                selection_status=item["selection_status"],
+                selection_reason=item["selection_reason"],
+                completed_at=datetime.utcnow() if not is_selected else None
             )
             self.db.add(ar)
             agent_runs.append(ar)
@@ -67,9 +111,13 @@ class WorkflowOrchestrator:
         await self.db.commit()
         for ar in agent_runs:
             await self.db.refresh(ar)
+            status_msg = f"Dispatched agent {ar.agent_name}" if ar.selection_status == "SELECTED" else f"Skipped agent {ar.agent_name} ({ar.selection_reason})"
             await self.emit_event("AGENT_LOG", investigation_id, {
-                "message": f"Dispatched agent {ar.agent_name} for question: '{ar.sub_question}'",
-                "agent_run_id": ar.id
+                "message": f"{status_msg} for question: '{ar.sub_question}'",
+                "agent_run_id": ar.id,
+                "selection_status": ar.selection_status,
+                "value_score": ar.estimated_value,
+                "cost_usdc": ar.estimated_cost_usdc
             })
 
         # 3. Agent Execution Node (IN_PROGRESS)
@@ -81,7 +129,10 @@ class WorkflowOrchestrator:
         total_spend = 0.0
 
         for ar in agent_runs:
-            # Create x402 client bound to this agent run
+            # Skip execution if item was filtered out by budget knapsack optimization
+            if ar.selection_status != "SELECTED":
+                continue
+
             x402_client = X402Client(
                 db_session=self.db,
                 investigation_id=investigation_id,

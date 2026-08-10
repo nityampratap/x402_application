@@ -7,6 +7,7 @@ from app.schemas.payment import PaymentLogResponse
 
 class InvestigationCreate(BaseModel):
     claim: str = Field(min_length=5, description="Claim text to autonomously investigate")
+    max_budget_usdc: Optional[float] = Field(default=0.01, description="Maximum budget allocated in USDC")
 
 class AgentRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -17,6 +18,10 @@ class AgentRunResponse(BaseModel):
     agent_type: str
     sub_question: str
     status: str
+    estimated_value: Optional[float] = None
+    estimated_cost_usdc: Optional[float] = None
+    selection_status: str = "SELECTED"
+    selection_reason: Optional[str] = None
     started_at: datetime
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
@@ -29,6 +34,7 @@ class InvestigationResponse(BaseModel):
     status: InvestigationStatus
     overall_confidence_score: Optional[float] = None
     total_spend_usdc: float = 0.0
+    max_budget_usdc: float = 0.01
     created_at: datetime
     updated_at: datetime
     agent_runs: List[AgentRunResponse] = []

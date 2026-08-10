@@ -33,6 +33,7 @@ class Investigation(Base):
     )
     overall_confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     total_spend_usdc: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    max_budget_usdc: Mapped[float] = mapped_column(Float, default=0.01, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -50,6 +51,10 @@ class AgentRun(Base):
     agent_type: Mapped[str] = mapped_column(String(50), nullable=False)
     sub_question: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="RUNNING", nullable=False)
+    estimated_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    estimated_cost_usdc: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    selection_status: Mapped[str] = mapped_column(String(20), default="SELECTED", nullable=False)
+    selection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
