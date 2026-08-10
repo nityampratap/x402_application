@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     WALLET_PRIVATE_KEY: Optional[str] = Field(default=None)
     PAYMENT_RECIPIENT_ADDRESS: Optional[str] = Field(default=None, description="Key-controlled seller wallet address for receiving x402 micropayments")
     X402_FACILITATOR_URL: str = Field(default="https://x402.org/facilitator")
+    NEWSAPI_KEY: Optional[str] = Field(default=None, description="NewsAPI.org API key for paid-news endpoint")
 
     @property
     def active_private_key(self) -> Optional[str]:
