@@ -113,62 +113,112 @@ export const FinalReportScreen: React.FC<FinalReportScreenProps> = ({ investigat
         )}
       </div>
 
-      {/* x402 Payment Ledger Audit Table */}
-      <div className="space-y-4">
+      {/* Investigation Replay & Timeline */}
+      <div className="space-y-6">
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          ⚡ x402 Micropayment Ledger & On-Chain Settlement ({investigation.payment_logs?.length || 0})
+          ⏱️ Investigation Replay & Payment Audit
         </h3>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">Endpoint URL</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Network</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">On-Chain Tx Hash</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {investigation.payment_logs && investigation.payment_logs.length > 0 ? (
-                  investigation.payment_logs.map((log: PaymentLog) => (
-                    <tr key={log.id} className="hover:bg-slate-950/50 transition-colors">
-                      <td className="px-4 py-3.5 text-white font-semibold">{log.endpoint_url}</td>
-                      <td className="px-4 py-3.5 text-cyan-400 font-bold">${log.amount_usdc.toFixed(4)} USDC</td>
-                      <td className="px-4 py-3.5 text-slate-400">{log.network}</td>
-                      <td className="px-4 py-3.5">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                          {log.status}
+        <div className="relative border-l-2 border-slate-800 ml-4 space-y-8 pb-4">
+          {(() => {
+            // Combine payments and evidence into a single timeline, sorted by created_at
+            const timelineEvents: Array<{ type: 'payment' | 'evidence', data: any, timestamp: number }> = [];
+            
+            investigation.payment_logs?.forEach((pl) => {
+              timelineEvents.push({ type: 'payment', data: pl, timestamp: new Date(pl.created_at).getTime() });
+            });
+            
+            investigation.evidence_items?.forEach((ev) => {
+              timelineEvents.push({ type: 'evidence', data: ev, timestamp: new Date(ev.created_at).getTime() });
+            });
+
+            timelineEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+            if (timelineEvents.length === 0) {
+              return (
+                <div className="pl-6 text-slate-500 italic">No events recorded.</div>
+              );
+            }
+
+            return timelineEvents.map((evt, idx) => {
+              const timeStr = new Date(evt.timestamp).toLocaleTimeString();
+              
+              if (evt.type === 'payment') {
+                const log: PaymentLog = evt.data;
+                const agentRun = investigation.agent_runs?.find(ar => ar.id === log.agent_run_id);
+                return (
+                  <div key={`pl-${log.id}`} className="relative pl-8">
+                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-cyan-950 border-2 border-cyan-500" />
+                    
+                    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4 hover:border-cyan-500/30 transition-colors">
+                      <div className="flex flex-wrap justify-between items-start gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
+                            <span>{timeStr}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">PAYMENT EXECUTED</span>
+                          </div>
+                          <h4 className="text-white font-bold text-base">{log.endpoint_url}</h4>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-cyan-400 font-bold text-lg">${log.amount_usdc.toFixed(4)} USDC</div>
+                          <div className="text-xs font-mono text-emerald-400 font-semibold">{log.status}</div>
+                        </div>
+                      </div>
+
+                      {log.tx_hash && (
+                        <div className="text-xs font-mono text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                          Tx: <a href={`https://sepolia.basescan.org/tx/${log.tx_hash}`} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">{log.tx_hash} ↗</a>
+                        </div>
+                      )}
+
+                      {/* Why Did I Pay? Panel */}
+                      {agentRun && (
+                        <div className="mt-3 bg-slate-800/30 border-l-4 border-cyan-500 rounded-r-lg p-4 space-y-2">
+                          <h5 className="text-sm font-bold text-white flex items-center gap-2">
+                            💡 Why did I pay for this?
+                          </h5>
+                          <div className="text-xs font-mono text-slate-300">
+                            <strong>Agent:</strong> {agentRun.agent_name}
+                          </div>
+                          <div className="text-xs font-mono text-slate-300">
+                            <strong>Value Estimate:</strong> <span className="text-emerald-400">{agentRun.estimated_value}/100</span>
+                          </div>
+                          <p className="text-sm text-slate-400 italic">
+                            "{agentRun.selection_reason}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              } else {
+                const ev: EvidenceItem = evt.data;
+                return (
+                  <div key={`ev-${ev.id}`} className="relative pl-8">
+                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-emerald-950 border-2 border-emerald-500" />
+                    
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
+                        <span>{timeStr}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">EVIDENCE OBTAINED</span>
+                      </div>
+                      <p className="text-slate-200 text-sm leading-relaxed">
+                        {ev.content_summary}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-mono font-bold text-emerald-400">
+                          Reliability: {(ev.reliability_score * 100).toFixed(1)}%
                         </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {log.tx_hash ? (
-                          <a
-                            href={`https://sepolia.basescan.org/tx/${log.tx_hash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300 underline font-mono"
-                          >
-                            {log.tx_hash.slice(0, 10)}...{log.tx_hash.slice(-8)} ↗
-                          </a>
-                        ) : (
-                          <span className="text-slate-600">N/A</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500 italic">
-                      No payment logs recorded.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                        <a href={ev.source_url} target="_blank" rel="noreferrer" className="text-xs font-mono text-cyan-400 hover:underline">
+                          View Source ↗
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            });
+          })()}
         </div>
       </div>
 
