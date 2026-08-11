@@ -21,7 +21,11 @@ export interface AgentRun {
   agent_name: string;
   agent_type: string;
   sub_question: string;
-  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
+  estimated_value?: number;
+  estimated_cost_usdc?: number;
+  selection_status?: 'SELECTED' | 'SKIPPED';
+  selection_reason?: string;
   started_at: string;
   completed_at?: string;
   error_message?: string;
@@ -58,6 +62,7 @@ export interface Investigation {
   status: InvestigationStatus;
   overall_confidence_score: number | null;
   total_spend_usdc: number;
+  max_budget_usdc: number;
   created_at: string;
   updated_at: string;
   agent_runs: AgentRun[];

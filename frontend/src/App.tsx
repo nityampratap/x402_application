@@ -1,119 +1,149 @@
-import React, { useState, useEffect } from 'react';
-import { ClaimInput } from './components/ClaimInput';
-import { Timeline } from './components/Timeline';
-import { PaymentAudit } from './components/PaymentAudit';
-import { ConfidenceCard } from './components/ConfidenceCard';
-import { createInvestigation, getInvestigation, subscribeToInvestigationSSE } from './services/api';
-import { Investigation, PaymentLog, EvidenceItem } from './types';
+import React, { useState } from 'react';
+import { LandingScreen } from './components/LandingScreen';
+import { SubmitClaimScreen } from './components/SubmitClaimScreen';
+import { LiveActivityScreen } from './components/LiveActivityScreen';
+import { FinalReportScreen } from './components/FinalReportScreen';
+import { createInvestigation, getInvestigation } from './services/api';
+import { Investigation } from './types';
+
+type ScreenType = 'landing' | 'submit' | 'activity' | 'report';
 
 export const App: React.FC = () => {
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('landing');
+  const [selectedInvestigationId, setSelectedInvestigationId] = useState<string | null>(null);
   const [currentInvestigation, setCurrentInvestigation] = useState<Investigation | null>(null);
-  const [sseEvents, setSseEvents] = useState<Array<{ type: string; timestamp: string; payload: any }>>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'timeline' | 'payments'>('timeline');
 
-  const handleClaimSubmit = async (claimText: string) => {
+  const handleStartNew = () => {
+    setCurrentScreen('submit');
+  };
+
+  const handleSelectInvestigation = async (inv: Investigation) => {
     setLoading(true);
-    setSseEvents([]);
     try {
-      const newInv = await createInvestigation(claimText);
-      setCurrentInvestigation(newInv);
-
-      // Subscribe to SSE stream for live updates
-      const unsubscribe = subscribeToInvestigationSSE(newInv.id, (eventType, data) => {
-        setSseEvents((prev) => [...prev, { type: eventType, timestamp: data.timestamp, payload: data.payload }]);
-        
-        // Refresh investigation snapshot on state changes
-        if (eventType === 'STATE_CHANGE') {
-          getInvestigation(newInv.id).then(updated => {
-            if (updated) setCurrentInvestigation(updated);
-          });
-        }
-      });
-
-      // Cleanup subscription on unmount / next claim
-      return () => unsubscribe();
-    } catch (err: any) {
-      alert(`Investigation creation failed: ${err.message}`);
+      const full = await getInvestigation(inv.id);
+      setCurrentInvestigation(full);
+      setSelectedInvestigationId(full.id);
+      if (full.status === 'COMPLETED') {
+        setCurrentScreen('report');
+      } else {
+        setCurrentScreen('activity');
+      }
+    } catch (err) {
+      console.error('Failed to load investigation:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSubmitClaim = async (claimText: string, budgetUsdc: number) => {
+    setLoading(true);
+    try {
+      const newInv = await createInvestigation(claimText, budgetUsdc);
+      setCurrentInvestigation(newInv);
+      setSelectedInvestigationId(newInv.id);
+      setCurrentScreen('activity');
+    } catch (err: any) {
+      alert(`Investigation submission failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewReportFromActivity = async (inv: Investigation) => {
+    try {
+      const full = await getInvestigation(inv.id);
+      setCurrentInvestigation(full);
+      setCurrentScreen('report');
+    } catch (err) {
+      console.error('Failed to fetch report:', err);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950">
-      {/* Navbar Header */}
-      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-extrabold text-slate-950 text-lg shadow-lg shadow-cyan-500/20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 flex flex-col">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div
+            onClick={() => setCurrentScreen('landing')}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-extrabold text-slate-950 text-lg shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
               eOS
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
                 EvidenceOS
-                <span className="text-xs font-mono font-normal bg-cyan-950 border border-cyan-800 text-cyan-400 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-mono font-normal bg-cyan-950 border border-cyan-800 text-cyan-400 px-2 py-0.5 rounded">
                   Base Sepolia (84532)
                 </span>
               </h1>
               <p className="text-slate-400 text-xs">
-                Autonomous Evidence-Purchasing & Verification Platform (x402 Protocol)
+                Autonomous Evidence-Purchasing & Verification Platform
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-xs px-3 py-1.5 rounded-full font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              x402 Protocol Active
-            </div>
-          </div>
+          {/* Navigation Links */}
+          <nav className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentScreen('landing')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                currentScreen === 'landing' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Dashboard
+            </button>
+
+            <button
+              onClick={() => setCurrentScreen('submit')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                currentScreen === 'submit' ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold'
+              }`}
+            >
+              + New Investigation
+            </button>
+          </nav>
         </div>
       </header>
 
-      {/* Main Dashboard Layout */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <ClaimInput onSubmit={handleClaimSubmit} loading={loading} />
+      {/* Screen Views Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+        {currentScreen === 'landing' && (
+          <LandingScreen
+            onStartNew={handleStartNew}
+            onSelectInvestigation={handleSelectInvestigation}
+          />
+        )}
 
-        {currentInvestigation && (
-          <>
-            <ConfidenceCard
-              investigation={currentInvestigation}
-              evidenceItems={currentInvestigation.evidence_items || []}
-            />
+        {currentScreen === 'submit' && (
+          <SubmitClaimScreen
+            onSubmit={handleSubmitClaim}
+            onBack={() => setCurrentScreen('landing')}
+            loading={loading}
+          />
+        )}
 
-            {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-800 mb-6">
-              <button
-                onClick={() => setActiveTab('timeline')}
-                className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 ${
-                  activeTab === 'timeline'
-                    ? 'border-cyan-400 text-cyan-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                📋 Investigation Timeline & Events
-              </button>
-              <button
-                onClick={() => setActiveTab('payments')}
-                className={`px-6 py-3 font-semibold text-sm transition-colors border-b-2 ${
-                  activeTab === 'payments'
-                    ? 'border-cyan-400 text-cyan-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                ⚡ x402 Micropayment Ledger ({currentInvestigation.payment_logs?.length || 0})
-              </button>
-            </div>
+        {currentScreen === 'activity' && selectedInvestigationId && (
+          <LiveActivityScreen
+            investigationId={selectedInvestigationId}
+            onViewReport={handleViewReportFromActivity}
+          />
+        )}
 
-            {activeTab === 'timeline' ? (
-              <Timeline investigation={currentInvestigation} events={sseEvents} />
-            ) : (
-              <PaymentAudit paymentLogs={currentInvestigation.payment_logs || []} />
-            )}
-          </>
+        {currentScreen === 'report' && currentInvestigation && (
+          <FinalReportScreen
+            investigation={currentInvestigation}
+            onNewInvestigation={handleStartNew}
+          />
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-900 bg-slate-950 py-6 px-6 text-center text-xs text-slate-500 font-mono">
+        EvidenceOS Autonomous Platform &bull; Powered by x402 Micropayments &amp; Base Sepolia Testnet
+      </footer>
     </div>
   );
 };
