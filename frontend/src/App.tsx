@@ -14,9 +14,7 @@ export const App: React.FC = () => {
   const [currentInvestigation, setCurrentInvestigation] = useState<Investigation | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleStartNew = () => {
-    setCurrentScreen('submit');
-  };
+  const handleStartNew = () => setCurrentScreen('submit');
 
   const handleSelectInvestigation = async (inv: Investigation) => {
     setLoading(true);
@@ -24,11 +22,7 @@ export const App: React.FC = () => {
       const full = await getInvestigation(inv.id);
       setCurrentInvestigation(full);
       setSelectedInvestigationId(full.id);
-      if (full.status === 'COMPLETED') {
-        setCurrentScreen('report');
-      } else {
-        setCurrentScreen('activity');
-      }
+      setCurrentScreen(full.status === 'COMPLETED' ? 'report' : 'activity');
     } catch (err) {
       console.error('Failed to load investigation:', err);
     } finally {
@@ -61,88 +55,104 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 flex flex-col">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div
-            onClick={() => setCurrentScreen('landing')}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-extrabold text-slate-950 text-lg shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              eOS
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                EvidenceOS
-                <span className="text-[10px] font-mono font-normal bg-cyan-950 border border-cyan-800 text-cyan-400 px-2 py-0.5 rounded">
-                  Base Sepolia (84532)
-                </span>
-              </h1>
-              <p className="text-slate-400 text-xs">
-                Autonomous Evidence-Purchasing & Verification Platform
-              </p>
-            </div>
-          </div>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-3">
+      {/* ── Top Navbar ───────────────────────────────────────────── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        backgroundColor: 'var(--bg)',
+        borderBottom: '1px solid var(--border)',
+        padding: '0 1.5rem',
+      }}>
+        <div style={{ maxWidth: '72rem', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
+
+          {/* Wordmark */}
+          <button
+            onClick={() => setCurrentScreen('landing')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', padding: 0 }}
+          >
+            {/* Logo mark — a simple wax-seal circle */}
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+              <circle cx="16" cy="16" r="15" stroke="#A3311F" strokeWidth="1.5"/>
+              <circle cx="16" cy="16" r="10" stroke="#A3311F" strokeWidth="1"/>
+              <text x="16" y="20" textAnchor="middle" fill="#A3311F" fontSize="8" fontFamily="JetBrains Mono" fontWeight="700">EOS</text>
+            </svg>
+            <div>
+              <div className="font-display" style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.01em', lineHeight: 1 }}>
+                EvidenceOS
+              </div>
+              <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Base Sepolia / 84532
+              </div>
+            </div>
+          </button>
+
+          {/* Nav links */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => setCurrentScreen('landing')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                currentScreen === 'landing' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontFamily: 'IBM Plex Sans, sans-serif',
+                color: currentScreen === 'landing' ? 'var(--text)' : 'var(--text-muted)',
+                borderBottom: currentScreen === 'landing' ? '1px solid var(--text)' : '1px solid transparent',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+              }}
             >
-              Dashboard
+              Case Files
             </button>
-
             <button
               onClick={() => setCurrentScreen('submit')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                currentScreen === 'submit' ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold'
-              }`}
+              style={{
+                padding: '7px 16px',
+                fontSize: '12px',
+                fontFamily: 'IBM Plex Sans, sans-serif',
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'var(--bg)',
+                background: 'var(--text)',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
-              + New Investigation
+              New Investigation
             </button>
           </nav>
         </div>
       </header>
 
-      {/* Screen Views Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+      {/* ── Screen Container ─────────────────────────────────────── */}
+      <main style={{ flex: 1, maxWidth: '72rem', width: '100%', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {currentScreen === 'landing' && (
-          <LandingScreen
-            onStartNew={handleStartNew}
-            onSelectInvestigation={handleSelectInvestigation}
-          />
+          <LandingScreen onStartNew={handleStartNew} onSelectInvestigation={handleSelectInvestigation} />
         )}
-
         {currentScreen === 'submit' && (
-          <SubmitClaimScreen
-            onSubmit={handleSubmitClaim}
-            onBack={() => setCurrentScreen('landing')}
-            loading={loading}
-          />
+          <SubmitClaimScreen onSubmit={handleSubmitClaim} onBack={() => setCurrentScreen('landing')} loading={loading} />
         )}
-
         {currentScreen === 'activity' && selectedInvestigationId && (
-          <LiveActivityScreen
-            investigationId={selectedInvestigationId}
-            onViewReport={handleViewReportFromActivity}
-          />
+          <LiveActivityScreen investigationId={selectedInvestigationId} onViewReport={handleViewReportFromActivity} />
         )}
-
         {currentScreen === 'report' && currentInvestigation && (
-          <FinalReportScreen
-            investigation={currentInvestigation}
-            onNewInvestigation={handleStartNew}
-          />
+          <FinalReportScreen investigation={currentInvestigation} onNewInvestigation={handleStartNew} />
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-6 px-6 text-center text-xs text-slate-500 font-mono">
-        EvidenceOS Autonomous Platform &bull; Powered by x402 Micropayments &amp; Base Sepolia Testnet
+      {/* ── Footer ───────────────────────────────────────────────── */}
+      <footer style={{
+        borderTop: '1px solid var(--border)',
+        padding: '1rem 1.5rem',
+        textAlign: 'center',
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '10px',
+        color: 'var(--text-dim)',
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+      }}>
+        EvidenceOS &bull; Autonomous Evidence Acquisition &bull; x402 Protocol &bull; Base Sepolia Testnet
       </footer>
     </div>
   );

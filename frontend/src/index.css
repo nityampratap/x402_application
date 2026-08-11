@@ -2,8 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens ──────────────────────────────────────────────── */
+:root {
+  --bg:          #0B0B0C;
+  --surface:     #141414;
+  --surface-2:   #1C1C1D;
+  --border:      #2A2A2B;
+  --border-subtle: #1F1F20;
+  --text:        #EDEAE4;
+  --text-muted:  #7A7671;
+  --text-dim:    #4A4744;
+  --accent:      #D8A13B;   /* amber — tags/labels only */
+  --stamp:       #A3311F;   /* verified/danger stamp */
+  --confidence:  #4C7A5E;   /* success green */
+}
+
+/* ── Base resets ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-font-smoothing: antialiased; }
+
 body {
   margin: 0;
-  background-color: #030712;
-  color: #f9fafb;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
 }
+
+/* ── Typography system ───────────────────────────────────────────── */
+.font-display { font-family: 'Fraunces', Georgia, serif; }
+.font-body    { font-family: 'IBM Plex Sans', sans-serif; }
+.font-data    { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Stamp SVG animation ─────────────────────────────────────────── */
+@keyframes stamp-in {
+  0%   { transform: rotate(-12deg) scale(1.35); opacity: 0; }
+  60%  { transform: rotate(-12deg) scale(0.95); opacity: 1; }
+  80%  { transform: rotate(-12deg) scale(1.02); }
+  100% { transform: rotate(-12deg) scale(1);    opacity: 1; }
+}
+
+.stamp-graphic {
+  animation: stamp-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3A3A3B; }
+
+/* ── Selection ───────────────────────────────────────────────────── */
+::selection { background: var(--accent); color: #000; }
+
+/* ── Range slider forensic style ────────────────────────────────── */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 0;
+  margin-top: -5.5px;
+  cursor: pointer;
+}
+input[type=range]:focus { outline: none; }
+
+/* ── Utility: ruled section separator ──────────────────────────── */
+.ruled { border-top: 1px solid var(--border); }

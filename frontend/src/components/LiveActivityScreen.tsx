@@ -7,167 +7,183 @@ interface LiveActivityScreenProps {
   onViewReport: (inv: Investigation) => void;
 }
 
+const STEPS = ['PLANNING', 'AGENT_DISPATCH', 'IN_PROGRESS', 'SCORING', 'COMPLETED'];
+
+const STEP_LABEL: Record<string, string> = {
+  PLANNING: 'Planning',
+  AGENT_DISPATCH: 'Dispatch',
+  IN_PROGRESS: 'Executing',
+  SCORING: 'Scoring',
+  COMPLETED: 'Closed',
+};
+
 export const LiveActivityScreen: React.FC<LiveActivityScreenProps> = ({ investigationId, onViewReport }) => {
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
   const [events, setEvents] = useState<Array<{ type: string; timestamp: string; payload: any }>>([]);
-  const [budgetAllocation, setBudgetAllocation] = useState<any>(null);
 
-  // Poll investigation state and subscribe to SSE events
   useEffect(() => {
     let isMounted = true;
-
-    const fetchCurrent = async () => {
+    const fetch = async () => {
       try {
         const inv = await getInvestigation(investigationId);
         if (isMounted) setInvestigation(inv);
-      } catch (err) {
-        console.error('Error fetching investigation:', err);
-      }
+      } catch {}
     };
 
-    fetchCurrent();
-    const interval = setInterval(fetchCurrent, 1500);
+    fetch();
+    const interval = setInterval(fetch, 1500);
 
-    const unsubscribe = subscribeToInvestigationSSE(investigationId, (eventType, data) => {
+    const unsub = subscribeToInvestigationSSE(investigationId, (eventType, data) => {
       if (!isMounted) return;
       setEvents((prev) => [...prev, { type: eventType, timestamp: data.timestamp, payload: data.payload }]);
-      
-      if (eventType === 'BUDGET_ALLOCATION') {
-        setBudgetAllocation(data.payload);
-      }
-      if (eventType === 'STATE_CHANGE' || eventType === 'COMPLETED') {
-        fetchCurrent();
-      }
+      if (eventType === 'STATE_CHANGE' || eventType === 'COMPLETED') fetch();
     });
 
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-      unsubscribe();
-    };
+    return () => { isMounted = false; clearInterval(interval); unsub(); };
   }, [investigationId]);
 
-  const steps = ['PLANNING', 'AGENT_DISPATCH', 'IN_PROGRESS', 'SCORING', 'COMPLETED'];
-  const currentStepIdx = investigation ? steps.indexOf(investigation.status) : 0;
+  const currentStepIdx = investigation ? STEPS.indexOf(investigation.status) : 0;
 
   return (
-    <div className="space-y-8">
-      {/* Header Info */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <span className="text-cyan-400 text-xs font-mono font-bold tracking-wider uppercase">Live Agent Investigation</span>
-            <h2 className="text-2xl font-bold text-white mt-1">"{investigation?.claim_text || 'Loading Claim...'}"</h2>
-            <p className="text-slate-400 text-xs font-mono mt-1">ID: {investigationId}</p>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-          {investigation?.status === 'COMPLETED' && (
-            <button
-              id="view-report-btn"
-              onClick={() => onViewReport(investigation)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
-            >
-              View Final Report →
-            </button>
-          )}
+      {/* ── Case Header ───────────────────────────────────────────── */}
+      <div style={{ borderTop: '3px solid var(--text)', paddingTop: '1.5rem' }}>
+        <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          Active Investigation &nbsp;/&nbsp; {investigationId}
         </div>
+        <h2 className="font-display" style={{ fontSize: 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', margin: 0, lineHeight: 1.3 }}>
+          "{investigation?.claim_text || 'Loading claim…'}"
+        </h2>
 
-        {/* Workflow Stepper */}
-        <div className="grid grid-cols-5 gap-2 pt-4 border-t border-slate-800/80">
-          {steps.map((step, idx) => {
-            const isPassed = idx <= currentStepIdx;
-            const isCurrent = idx === currentStepIdx;
-            return (
-              <div key={step} className="space-y-2">
-                <div className={`h-2 rounded-full transition-all ${
-                  isPassed ? 'bg-cyan-400 shadow-sm shadow-cyan-400/50' : 'bg-slate-800'
-                }`} />
-                <div className={`text-[10px] font-mono uppercase tracking-wider text-center ${
-                  isCurrent ? 'text-cyan-300 font-bold' : isPassed ? 'text-slate-300' : 'text-slate-600'
-                }`}>
-                  {step.replace('_', ' ')}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {investigation?.status === 'COMPLETED' && (
+          <button
+            id="view-report-btn"
+            onClick={() => onViewReport(investigation)}
+            style={{
+              marginTop: '1rem',
+              fontFamily: 'IBM Plex Sans, sans-serif',
+              fontWeight: 600,
+              fontSize: '12px',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--bg)',
+              background: 'var(--confidence)',
+              border: 'none',
+              padding: '10px 22px',
+              cursor: 'pointer',
+            }}
+          >
+            View Final Report
+          </button>
+        )}
       </div>
 
-      {/* 0/1 Knapsack Budget Allocation Card */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            🎯 0/1 Knapsack Budget Allocation Decisions
-          </h3>
-          <span className="text-cyan-400 font-mono text-sm font-bold">
-            Max Budget: ${(investigation?.max_budget_usdc || 0.002).toFixed(4)} USDC
+      {/* ── Progress track ───────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+        {STEPS.map((step, idx) => {
+          const passed  = idx <= currentStepIdx;
+          const current = idx === currentStepIdx;
+          return (
+            <div key={step} style={{ flex: 1, borderRight: idx < STEPS.length - 1 ? '1px solid var(--border)' : 'none', padding: '0 12px 0 0', marginRight: idx < STEPS.length - 1 ? '12px' : 0 }}>
+              <div style={{ height: '2px', background: passed ? 'var(--text)' : 'var(--border-subtle)', marginBottom: '6px', transition: 'background 0.3s' }} />
+              <div className="font-data" style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: current ? 'var(--text)' : passed ? 'var(--text-muted)' : 'var(--text-dim)' }}>
+                {STEP_LABEL[step]}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Budget allocation table ───────────────────────────────── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div style={{ padding: '0.875rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="font-data" style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Budget Allocation — 0/1 Knapsack
+          </span>
+          <span className="font-data" style={{ fontSize: '10px', color: 'var(--accent)' }}>
+            Max: ${(investigation?.max_budget_usdc || 0.002).toFixed(4)} USDC
           </span>
         </div>
 
         {investigation?.agent_runs && investigation.agent_runs.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
-            {investigation.agent_runs.map((ar: AgentRun) => (
-              <div
-                key={ar.id}
-                className={`p-4 rounded-xl border transition-all ${
-                  ar.selection_status === 'SELECTED'
-                    ? 'bg-slate-950/80 border-cyan-500/40'
-                    : 'bg-slate-950/40 border-slate-800/80 opacity-75'
-                }`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2.5 py-1 rounded text-xs font-mono font-bold ${
-                      ar.selection_status === 'SELECTED'
-                        ? 'bg-cyan-950 text-cyan-400 border border-cyan-800'
-                        : 'bg-amber-950 text-amber-400 border border-amber-800'
-                    }`}>
-                      {ar.selection_status || 'SELECTED'}
-                    </span>
-                    <h4 className="font-bold text-white text-sm">{ar.agent_name}</h4>
+          <div>
+            {investigation.agent_runs.map((ar: AgentRun, i: number) => {
+              const selected = ar.selection_status === 'SELECTED';
+              return (
+                <div
+                  key={ar.id}
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '0.875rem 1rem',
+                    borderBottom: i < (investigation.agent_runs?.length ?? 0) - 1 ? '1px solid var(--border-subtle)' : 'none',
+                    opacity: selected ? 1 : 0.5,
+                  }}
+                >
+                  {/* Status tag */}
+                  <span className="font-data" style={{
+                    fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em',
+                    border: `1px solid ${selected ? 'var(--confidence)' : 'var(--border)'}`,
+                    color: selected ? 'var(--confidence)' : 'var(--text-dim)',
+                    padding: '2px 6px', flexShrink: 0,
+                  }}>
+                    {selected ? 'SELECTED' : 'SKIPPED'}
+                  </span>
+
+                  {/* Agent name + sub-question */}
+                  <div style={{ flex: 1, minWidth: '180px' }}>
+                    <div className="font-body" style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)', marginBottom: '2px' }}>{ar.agent_name}</div>
+                    <div className="font-body" style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>"{ar.sub_question}"</div>
+                    {ar.selection_reason && (
+                      <div className="font-data" style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px' }}>{ar.selection_reason}</div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs font-mono">
-                    <span className="text-slate-400">Value Score: <strong className="text-emerald-400">{ar.estimated_value || 85}/100</strong></span>
-                    <span className="text-slate-400">Cost: <strong className="text-cyan-400">${(ar.estimated_cost_usdc || 0.001).toFixed(4)} USDC</strong></span>
+                  {/* Metrics */}
+                  <div style={{ display: 'flex', gap: '1.5rem', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Value</div>
+                      <div className="font-data" style={{ fontSize: '13px', color: 'var(--confidence)' }}>{ar.estimated_value || 85}/100</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Cost</div>
+                      <div className="font-data" style={{ fontSize: '13px', color: 'var(--accent)' }}>${(ar.estimated_cost_usdc || 0.001).toFixed(4)}</div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="mt-2 text-xs text-slate-400 flex items-center justify-between gap-4">
-                  <p className="line-clamp-1">Sub-question: "{ar.sub_question}"</p>
-                  <span className="text-slate-500 text-[11px] shrink-0">{ar.selection_reason}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="p-6 text-center text-slate-500 text-xs font-mono bg-slate-950/50 rounded-xl border border-slate-800">
-            Running LLM Value Estimator & 0/1 Knapsack Optimizer...
+          <div className="font-data" style={{ padding: '1.5rem 1rem', fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
+            Running LLM value estimator &amp; Knapsack optimizer…
           </div>
         )}
       </div>
 
-      {/* Live Event Log Stream */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            📡 Live Event Stream & Agent Activity Log
-          </h3>
-          <span className="flex items-center gap-2 text-xs font-mono text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            Backend SSE Connected
+      {/* ── Live event log ─────────────────────────────────────────── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div style={{ padding: '0.875rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="font-data" style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Agent Event Log
+          </span>
+          <span className="font-data" style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
+            SSE / LIVE
           </span>
         </div>
 
-        <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-xs text-slate-300 max-h-80 overflow-y-auto space-y-2">
+        <div style={{ padding: '0.75rem 1rem', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {events.length === 0 ? (
-            <div className="text-slate-500 italic">Listening for backend orchestration events...</div>
+            <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>Listening for orchestration events…</span>
           ) : (
             events.map((evt, idx) => (
-              <div key={idx} className="flex items-start gap-3 border-b border-slate-900 pb-1.5 last:border-0">
-                <span className="text-slate-500 shrink-0">{new Date(evt.timestamp).toLocaleTimeString()}</span>
-                <span className="text-cyan-400 font-bold shrink-0">[{evt.type}]</span>
-                <span className="text-slate-300 break-all">{JSON.stringify(evt.payload)}</span>
+              <div key={idx} style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '4px', lineHeight: 1.5 }}>
+                <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 700, flexShrink: 0 }}>[{evt.type}]</span>
+                <span style={{ color: 'var(--text-muted)', wordBreak: 'break-all' }}>{JSON.stringify(evt.payload)}</span>
               </div>
             ))
           )}

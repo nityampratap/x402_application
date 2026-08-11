@@ -6,229 +6,307 @@ interface FinalReportScreenProps {
   onNewInvestigation: () => void;
 }
 
+/* ── Rubber stamp SVG ───────────────────────────────────────────── */
+const VerifiedStamp: React.FC<{ pct: string }> = ({ pct }) => (
+  <div className="stamp-graphic" style={{ display: 'inline-flex', position: 'relative', userSelect: 'none' }}>
+    <svg
+      width="200" height="200" viewBox="0 0 200 200"
+      fill="none" xmlns="http://www.w3.org/2000/svg"
+      aria-label={`Verified — ${pct}% confidence`}
+    >
+      {/* Outer distressed ring */}
+      <circle cx="100" cy="100" r="92" stroke="#A3311F" strokeWidth="6" strokeDasharray="8 3 4 2 6 1 3 4 5 2" opacity="0.9"/>
+      {/* Inner ring */}
+      <circle cx="100" cy="100" r="82" stroke="#A3311F" strokeWidth="1.5" opacity="0.6"/>
+      {/* Grain/noise overlay using SVG filter */}
+      <defs>
+        <filter id="stamp-grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" result="noise"/>
+          <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+          <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended"/>
+          <feComponentTransfer in="blended">
+            <feFuncA type="linear" slope="0.88"/>
+          </feComponentTransfer>
+        </filter>
+      </defs>
+
+      {/* Top arc text: VERIFIED */}
+      <path id="top-arc" d="M 22,100 A 78,78 0 0,1 178,100" fill="none"/>
+      <text fontFamily="JetBrains Mono, monospace" fontWeight="700" fontSize="14" letterSpacing="6" fill="#A3311F">
+        <textPath href="#top-arc" startOffset="50%" textAnchor="middle">VERIFIED</textPath>
+      </text>
+
+      {/* Bottom arc text: EVIDENCEOS */}
+      <path id="bot-arc" d="M 22,100 A 78,78 0 0,0 178,100" fill="none"/>
+      <text fontFamily="JetBrains Mono, monospace" fontWeight="700" fontSize="10" letterSpacing="5" fill="#A3311F">
+        <textPath href="#bot-arc" startOffset="50%" textAnchor="middle">EVIDENCEOS</textPath>
+      </text>
+
+      {/* Confidence score — large centre */}
+      <text x="100" y="95" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="42" fill="#A3311F">
+        {pct}%
+      </text>
+      {/* Label below score */}
+      <text x="100" y="118" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="9" fill="#A3311F" letterSpacing="3" opacity="0.8">
+        CONFIDENCE
+      </text>
+
+      {/* Distressed grain overlay */}
+      <rect x="8" y="8" width="184" height="184" rx="100" fill="#A3311F" opacity="0.04" filter="url(#stamp-grain)"/>
+    </svg>
+  </div>
+);
+
+/* ── Exhibit label ──────────────────────────────────────────────── */
+const exhibitLabel = (idx: number): string => {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  return `Exhibit ${letters[idx] ?? idx + 1}`;
+};
+
 export const FinalReportScreen: React.FC<FinalReportScreenProps> = ({ investigation, onNewInvestigation }) => {
-  const confidencePct = investigation.overall_confidence_score !== null 
+  const confidencePct = investigation.overall_confidence_score !== null
     ? (investigation.overall_confidence_score * 100).toFixed(1)
     : '88.5';
 
-  return (
-    <div className="space-y-8">
-      {/* Header Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="text-cyan-400 text-xs font-mono font-bold tracking-wider uppercase">Verified Investigation Report</span>
-          <h2 className="text-2xl font-bold text-white mt-1">"{investigation.claim_text}"</h2>
-          <p className="text-slate-400 text-xs font-mono mt-1">ID: {investigation.id}</p>
-        </div>
+  const confidenceNum = investigation.overall_confidence_score
+    ? investigation.overall_confidence_score * 100
+    : 88.5;
 
+  const verdictLabel = confidenceNum >= 75 ? 'VERIFIED' : confidenceNum >= 50 ? 'INCONCLUSIVE' : 'DISPUTED';
+  const verdictColor = confidenceNum >= 75 ? 'var(--confidence)' : confidenceNum >= 50 ? 'var(--accent)' : 'var(--stamp)';
+
+  /* Timeline: merge payments + evidence, sort chronologically */
+  const timelineEvents: Array<{ type: 'payment' | 'evidence'; data: any; ts: number }> = [];
+  investigation.payment_logs?.forEach((pl) =>
+    timelineEvents.push({ type: 'payment', data: pl, ts: new Date(pl.created_at).getTime() }));
+  investigation.evidence_items?.forEach((ev) =>
+    timelineEvents.push({ type: 'evidence', data: ev, ts: new Date(ev.created_at).getTime() }));
+  timelineEvents.sort((a, b) => a.ts - b.ts);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+
+      {/* ── Report header ─────────────────────────────────────────── */}
+      <div style={{ borderTop: '3px solid var(--text)', paddingTop: '1.5rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+        <div>
+          <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+            Investigation Report &nbsp;/&nbsp; {investigation.id}
+          </div>
+          <h2 className="font-display" style={{ fontSize: 'clamp(1rem, 3vw, 1.4rem)', fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', margin: 0, maxWidth: '60ch', lineHeight: 1.3 }}>
+            "{investigation.claim_text}"
+          </h2>
+        </div>
         <button
           onClick={onNewInvestigation}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all"
+          style={{
+            fontFamily: 'IBM Plex Sans, sans-serif', fontWeight: 600, fontSize: '12px',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)', background: 'none',
+            border: '1px solid var(--border)', padding: '8px 16px',
+            cursor: 'pointer', flexShrink: 0,
+          }}
         >
-          + New Investigation
+          New Investigation
         </button>
       </div>
 
-      {/* Truth Verdict Banner & Gauge */}
-      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── Verdict banner + stamp ─────────────────────────────────── */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        padding: '2rem',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '2rem',
+      }}>
+        {/* Stamp — the ONE bold moment */}
+        <div style={{ flexShrink: 0 }}>
+          <VerifiedStamp pct={confidencePct} />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          {/* Gauge Score */}
-          <div className="flex flex-col items-center justify-center p-6 bg-slate-950/80 rounded-2xl border border-slate-800">
-            <div className="text-5xl font-black text-emerald-400 font-mono tracking-tight">
-              {confidencePct}%
-            </div>
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">
-              Truth Confidence Score
-            </div>
-            <div className="mt-3 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-[11px] font-mono font-bold">
-              VERIFIED CONSENSUS
-            </div>
+        {/* Verdict text block */}
+        <div style={{ flex: 1, minWidth: '240px' }}>
+          <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+            Determination
           </div>
-
-          {/* Verdict Overview */}
-          <div className="md:col-span-2 space-y-3">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              🛡️ Verdict Summary & Analysis
-            </h3>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              Based on autonomous agent investigation across paywalled corporate registries and public open-web news feeds, the claim has been cross-referenced and verified with high reliability score evidence.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2 text-xs font-mono text-slate-400 border-t border-slate-800/80">
-              <div>Total Spend: <span className="text-cyan-400 font-bold">${investigation.total_spend_usdc.toFixed(4)} USDC</span></div>
-              <div>Allocated Budget: <span className="text-slate-200 font-bold">${(investigation.max_budget_usdc || 0.002).toFixed(4)} USDC</span></div>
-              <div>Evidence Items Purchased: <span className="text-emerald-400 font-bold">{investigation.evidence_items?.length || 0}</span></div>
-            </div>
+          <div className="font-data" style={{ fontSize: '1.5rem', fontWeight: 700, color: verdictColor, letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
+            {verdictLabel}
+          </div>
+          <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7, margin: '0 0 1rem' }}>
+            Autonomous agents cross-referenced the claim across paywalled registries and open-web feeds.
+            Evidence reliability and knapsack-optimised budget allocation produced the confidence score above.
+          </p>
+          {/* Metrics row */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.875rem' }}>
+            {[
+              { label: 'Total Spend', value: `$${investigation.total_spend_usdc.toFixed(4)} USDC` },
+              { label: 'Budget Limit', value: `$${(investigation.max_budget_usdc || 0.002).toFixed(4)} USDC` },
+              { label: 'Evidence Acquired', value: String(investigation.evidence_items?.length || 0) },
+              { label: 'Payments Settled', value: String(investigation.payment_logs?.length || 0) },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '2px' }}>{label}</div>
+                <div className="font-data" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{value}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Retrieved Evidence Grid */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          📄 Purchased & Verified Evidence Items ({investigation.evidence_items?.length || 0})
-        </h3>
+      {/* ── Evidence exhibits ─────────────────────────────────────── */}
+      <div>
+        <div className="font-data" style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+          Purchased Evidence &nbsp;({investigation.evidence_items?.length || 0} items)
+        </div>
 
         {investigation.evidence_items && investigation.evidence_items.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {investigation.evidence_items.map((item: EvidenceItem) => (
-              <div key={item.id} className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-lg hover:border-slate-700 transition-colors">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    {item.is_paid ? (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">
-                        ⚡ x402 Paid Source ($0.0010 USDC)
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-slate-800 text-slate-300">
-                        🌐 Open Web Source
-                      </span>
-                    )}
-                    <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                      {(item.reliability_score * 100).toFixed(1)}% Reliability
-                    </span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {investigation.evidence_items.map((item: EvidenceItem, idx: number) => (
+              <div
+                key={item.id}
+                style={{
+                  padding: '1.25rem 0',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                }}
+              >
+                {/* Exhibit label */}
+                <div style={{ flexShrink: 0, width: '72px' }}>
+                  <div className="font-data" style={{ fontSize: '9px', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    {exhibitLabel(idx)}
                   </div>
-
-                  <a
-                    href={item.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-cyan-400 hover:text-cyan-300 text-xs font-mono font-semibold flex items-center gap-1 underline truncate max-w-xs"
-                  >
-                    Source Link ↗
-                  </a>
+                  {item.is_paid && (
+                    <div className="font-data" style={{ fontSize: '8px', color: 'var(--text-dim)', letterSpacing: '0.06em', marginTop: '3px' }}>x402</div>
+                  )}
                 </div>
 
-                <p className="text-slate-200 text-sm leading-relaxed font-sans">
-                  {item.content_summary}
-                </p>
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: '240px' }}>
+                  <p className="font-body" style={{ fontSize: '13px', color: 'var(--text)', lineHeight: 1.7, margin: '0 0 0.5rem' }}>
+                    {item.content_summary}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+                    <span className="font-data" style={{ fontSize: '10px', color: 'var(--confidence)' }}>
+                      Reliability: {(item.reliability_score * 100).toFixed(1)}%
+                    </span>
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '10px', color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                    >
+                      Source ↗
+                    </a>
+                    {item.is_paid && (
+                      <span className="font-data" style={{ fontSize: '9px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 6px' }}>
+                        PAID · $0.0010 USDC
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="font-body" style={{ padding: '2rem 0', fontSize: '13px', color: 'var(--text-dim)' }}>
             No evidence items retrieved.
           </div>
         )}
       </div>
 
-      {/* Investigation Replay & Timeline */}
-      <div className="space-y-6">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          ⏱️ Investigation Replay & Payment Audit
-        </h3>
+      {/* ── Investigation replay timeline ─────────────────────────── */}
+      <div>
+        <div className="font-data" style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+          Investigation Replay &amp; Payment Audit
+        </div>
 
-        <div className="relative border-l-2 border-slate-800 ml-4 space-y-8 pb-4">
-          {(() => {
-            // Combine payments and evidence into a single timeline, sorted by created_at
-            const timelineEvents: Array<{ type: 'payment' | 'evidence', data: any, timestamp: number }> = [];
-            
-            investigation.payment_logs?.forEach((pl) => {
-              timelineEvents.push({ type: 'payment', data: pl, timestamp: new Date(pl.created_at).getTime() });
-            });
-            
-            investigation.evidence_items?.forEach((ev) => {
-              timelineEvents.push({ type: 'evidence', data: ev, timestamp: new Date(ev.created_at).getTime() });
-            });
+        {timelineEvents.length === 0 ? (
+          <div className="font-body" style={{ fontSize: '13px', color: 'var(--text-dim)', padding: '1rem 0' }}>No events recorded.</div>
+        ) : (
+          <div style={{ position: 'relative', paddingLeft: '1.5rem', borderLeft: '1px solid var(--border)' }}>
+            {timelineEvents.map((evt, idx) => {
+              const timeStr = new Date(evt.ts).toLocaleTimeString();
 
-            timelineEvents.sort((a, b) => a.timestamp - b.timestamp);
-
-            if (timelineEvents.length === 0) {
-              return (
-                <div className="pl-6 text-slate-500 italic">No events recorded.</div>
-              );
-            }
-
-            return timelineEvents.map((evt, idx) => {
-              const timeStr = new Date(evt.timestamp).toLocaleTimeString();
-              
               if (evt.type === 'payment') {
                 const log: PaymentLog = evt.data;
-                const agentRun = investigation.agent_runs?.find(ar => ar.id === log.agent_run_id);
+                const agentRun = investigation.agent_runs?.find((ar) => ar.id === log.agent_run_id);
                 return (
-                  <div key={`pl-${log.id}`} className="relative pl-8">
-                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-cyan-950 border-2 border-cyan-500" />
-                    
-                    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4 hover:border-cyan-500/30 transition-colors">
-                      <div className="flex flex-wrap justify-between items-start gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
-                            <span>{timeStr}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">PAYMENT EXECUTED</span>
-                          </div>
-                          <h4 className="text-white font-bold text-base">{log.endpoint_url}</h4>
+                  <div key={`pl-${log.id}`} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
+                    {/* Timeline dot */}
+                    <div style={{ position: 'absolute', left: '-1.875rem', top: '4px', width: '8px', height: '8px', background: 'var(--accent)', flexShrink: 0 }} />
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <div>
+                        <span className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', marginRight: '0.5rem' }}>{timeStr}</span>
+                        <span className="font-data" style={{ fontSize: '9px', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '1px 5px', letterSpacing: '0.08em' }}>PAYMENT EXECUTED</span>
+                      </div>
+                      <div className="font-data" style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: 700 }}>${log.amount_usdc.toFixed(4)} USDC</div>
+                    </div>
+
+                    <div className="font-body" style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>{log.endpoint_url}</div>
+
+                    {log.tx_hash && (
+                      <div className="font-data" style={{ fontSize: '10px', color: 'var(--text-dim)', background: 'var(--surface)', padding: '4px 8px', borderLeft: '2px solid var(--border)', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
+                        Tx: <a href={`https://sepolia.basescan.org/tx/${log.tx_hash}`} target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>{log.tx_hash} ↗</a>
+                      </div>
+                    )}
+
+                    {/* Why did I pay? */}
+                    {agentRun && (
+                      <div style={{ background: 'var(--surface)', borderLeft: '2px solid var(--border)', padding: '0.75rem 0.875rem', marginTop: '0.5rem' }}>
+                        <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                          Why did I pay for this?
                         </div>
-                        <div className="text-right">
-                          <div className="text-cyan-400 font-bold text-lg">${log.amount_usdc.toFixed(4)} USDC</div>
-                          <div className="text-xs font-mono text-emerald-400 font-semibold">{log.status}</div>
+                        <div className="font-data" style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                          Agent: {agentRun.agent_name} &nbsp;·&nbsp; Value estimate: <span style={{ color: 'var(--confidence)' }}>{agentRun.estimated_value}/100</span>
+                        </div>
+                        <div className="font-body" style={{ fontSize: '12px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                          "{agentRun.selection_reason}"
                         </div>
                       </div>
-
-                      {log.tx_hash && (
-                        <div className="text-xs font-mono text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800">
-                          Tx: <a href={`https://sepolia.basescan.org/tx/${log.tx_hash}`} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">{log.tx_hash} ↗</a>
-                        </div>
-                      )}
-
-                      {/* Why Did I Pay? Panel */}
-                      {agentRun && (
-                        <div className="mt-3 bg-slate-800/30 border-l-4 border-cyan-500 rounded-r-lg p-4 space-y-2">
-                          <h5 className="text-sm font-bold text-white flex items-center gap-2">
-                            💡 Why did I pay for this?
-                          </h5>
-                          <div className="text-xs font-mono text-slate-300">
-                            <strong>Agent:</strong> {agentRun.agent_name}
-                          </div>
-                          <div className="text-xs font-mono text-slate-300">
-                            <strong>Value Estimate:</strong> <span className="text-emerald-400">{agentRun.estimated_value}/100</span>
-                          </div>
-                          <p className="text-sm text-slate-400 italic">
-                            "{agentRun.selection_reason}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 );
               } else {
                 const ev: EvidenceItem = evt.data;
                 return (
-                  <div key={`ev-${ev.id}`} className="relative pl-8">
-                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-emerald-950 border-2 border-emerald-500" />
-                    
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
-                        <span>{timeStr}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">EVIDENCE OBTAINED</span>
-                      </div>
-                      <p className="text-slate-200 text-sm leading-relaxed">
-                        {ev.content_summary}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs font-mono font-bold text-emerald-400">
-                          Reliability: {(ev.reliability_score * 100).toFixed(1)}%
-                        </span>
-                        <a href={ev.source_url} target="_blank" rel="noreferrer" className="text-xs font-mono text-cyan-400 hover:underline">
-                          View Source ↗
-                        </a>
-                      </div>
+                  <div key={`ev-${ev.id}`} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
+                    <div style={{ position: 'absolute', left: '-1.875rem', top: '4px', width: '8px', height: '8px', border: '1px solid var(--confidence)', background: 'var(--bg)', flexShrink: 0 }} />
+
+                    <div style={{ marginBottom: '0.4rem' }}>
+                      <span className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', marginRight: '0.5rem' }}>{timeStr}</span>
+                      <span className="font-data" style={{ fontSize: '9px', color: 'var(--confidence)', border: '1px solid var(--confidence)', padding: '1px 5px', letterSpacing: '0.08em' }}>EVIDENCE OBTAINED</span>
+                    </div>
+                    <p className="font-body" style={{ fontSize: '13px', color: 'var(--text)', lineHeight: 1.7, margin: '0 0 0.4rem' }}>{ev.content_summary}</p>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <span className="font-data" style={{ fontSize: '10px', color: 'var(--confidence)' }}>Reliability: {(ev.reliability_score * 100).toFixed(1)}%</span>
+                      <a href={ev.source_url} target="_blank" rel="noreferrer" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '10px', color: 'var(--text-dim)', textDecoration: 'underline' }}>
+                        Source ↗
+                      </a>
                     </div>
                   </div>
                 );
               }
-            });
-          })()}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Why-This-Verdict & Budget Efficiency Transparency Card */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-3">
-        <h4 className="text-base font-bold text-white flex items-center gap-2">
-          💡 Why This Verdict & Budget Efficiency
-        </h4>
-        <p className="text-slate-300 text-xs leading-relaxed">
-          The 0/1 Knapsack optimizer evaluated all candidate sub-questions generated during claim planning, scored their value densities (0-100), and selected only the evidence sources that maximized confidence gain within the allocated max budget of <strong>${(investigation.max_budget_usdc || 0.002).toFixed(4)} USDC</strong>. Total actual spend was <strong>${investigation.total_spend_usdc.toFixed(4)} USDC</strong> across verified x402 settlement channels.
+      {/* ── Budget efficiency note ────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+        <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          Budget Efficiency Analysis
+        </div>
+        <p className="font-body" style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7, margin: 0, maxWidth: '72ch' }}>
+          The 0/1 Knapsack optimizer evaluated all candidate sub-questions, scored their value densities
+          (0–100), and selected only the sources that maximised confidence within the allocated budget of{' '}
+          <strong style={{ color: 'var(--text)' }}>${(investigation.max_budget_usdc || 0.002).toFixed(4)} USDC</strong>.
+          Total actual spend was{' '}
+          <strong style={{ color: 'var(--text)' }}>${investigation.total_spend_usdc.toFixed(4)} USDC</strong>{' '}
+          across x402-settled channels.
         </p>
       </div>
     </div>
