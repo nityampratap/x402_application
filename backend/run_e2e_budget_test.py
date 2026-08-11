@@ -66,8 +66,23 @@ async def main():
         await db.commit()
         await db.refresh(inv)
 
-        orchestrator = WorkflowOrchestrator(db=db)
+        event_logs = []
+        async def mock_event_callback(event_type: str, payload: dict):
+            # Print in real-time
+            ts = payload.get("timestamp", "")
+            agent = payload.get("payload", {}).get("agent_name", "")
+            msg = f"[{ts}] EVENT: {event_type}"
+            if agent:
+                msg += f" (Agent: {agent})"
+            print(msg)
+            event_logs.append(msg)
+
+        orchestrator = WorkflowOrchestrator(db=db, event_callback=mock_event_callback)
+        import time
+        start_t = time.time()
         await orchestrator.run_investigation(inv.id)
+        end_t = time.time()
+        print(f"\nTotal Orchestration Time: {end_t - start_t:.2f} seconds")
 
         # Reload investigation details
         await db.refresh(inv)

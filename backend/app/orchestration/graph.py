@@ -128,24 +128,47 @@ class WorkflowOrchestrator:
         collected_evidence: List[Dict[str, Any]] = []
         total_spend = 0.0
 
-        for ar in agent_runs:
-            # Skip execution if item was filtered out by budget knapsack optimization
-            if ar.selection_status != "SELECTED":
-                continue
-
+        async def execute_agent(ar):
             x402_client = X402Client(
                 db_session=self.db,
                 investigation_id=investigation_id,
                 agent_run_id=ar.id
             )
-
             agent_instance = AgentRegistry.get_agent(ar.agent_type, x402_client=x402_client)
             
-            # Execute Agent
+            await self.emit_event("AGENT_START", investigation_id, {
+                "agent_name": ar.agent_name,
+                "sub_question": ar.sub_question
+            })
+            
             result = await agent_instance.investigate(
                 sub_question=ar.sub_question,
                 context={"investigation_id": investigation_id, "agent_run_id": ar.id}
             )
+            
+            await self.emit_event("AGENT_COMPLETE", investigation_id, {
+                "agent_name": ar.agent_name,
+                "success": result.success
+            })
+            
+            return ar, result
+
+        tasks = []
+        for ar in agent_runs:
+            # Skip execution if item was filtered out by budget knapsack optimization
+            if ar.selection_status != "SELECTED":
+                continue
+            tasks.append(execute_agent(ar))
+
+        # Run selected agents in parallel
+        execution_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for res in execution_results:
+            if isinstance(res, Exception):
+                print(f"[WorkflowOrchestrator] Agent execution error: {res}")
+                continue
+            
+            ar, result = res
 
             # Record AgentRun completion
             ar.status = "COMPLETED" if result.success else "FAILED"
