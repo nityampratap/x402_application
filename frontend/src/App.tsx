@@ -57,75 +57,92 @@ export const App: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Top Navbar ───────────────────────────────────────────── */}
+      {/* ── Top Header Bar ───────────────────────────────────────── */}
       <header style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        backgroundColor: 'var(--bg)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: 'var(--surface)',
         borderBottom: '1px solid var(--border)',
         padding: '0 1.5rem',
       }}>
-        <div style={{ maxWidth: '72rem', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
+        <div style={{
+          maxWidth: '72rem',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: '64px'
+        }}>
 
-          {/* Wordmark */}
+          {/* Left / Center Branding: Centered Wordmark with Restrained Descriptor */}
           <button
             onClick={() => setCurrentScreen('landing')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', padding: 0 }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: 0,
+              textAlign: 'left'
+            }}
           >
-            {/* Logo mark — a simple wax-seal circle */}
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
-              <circle cx="16" cy="16" r="15" stroke="#A3311F" strokeWidth="1.5"/>
-              <circle cx="16" cy="16" r="10" stroke="#A3311F" strokeWidth="1"/>
-              <text x="16" y="20" textAnchor="middle" fill="#A3311F" fontSize="8" fontFamily="JetBrains Mono" fontWeight="700">EOS</text>
-            </svg>
+            {/* Minimal line icon logo mark */}
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              backgroundColor: 'var(--text)',
+              color: 'var(--surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: '14px',
+              fontFamily: 'JetBrains Mono, monospace'
+            }}>
+              E
+            </div>
             <div>
-              <div className="font-display" style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '0.01em', lineHeight: 1 }}>
+              <div className="font-display" style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text)', lineHeight: 1.1 }}>
                 EvidenceOS
               </div>
-              <div className="font-data" style={{ fontSize: '9px', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Base Sepolia / 84532
+              <div className="font-body" style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400, marginTop: '1px' }}>
+                Autonomous Evidence Investigation
               </div>
             </div>
           </button>
 
-          {/* Nav links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Right Navigation Actions */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               onClick={() => setCurrentScreen('landing')}
+              className="btn-secondary"
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontFamily: 'IBM Plex Sans, sans-serif',
+                fontSize: '13px',
                 color: currentScreen === 'landing' ? 'var(--text)' : 'var(--text-muted)',
-                borderBottom: currentScreen === 'landing' ? '1px solid var(--text)' : '1px solid transparent',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
+                fontWeight: currentScreen === 'landing' ? 600 : 400,
+                border: currentScreen === 'landing' ? '1px solid var(--text-muted)' : '1px solid var(--border)'
               }}
             >
-              Case Files
+              All Cases
             </button>
+
+            {/* Prominent Primary Blue Action for New Investigation */}
             <button
               onClick={() => setCurrentScreen('submit')}
-              style={{
-                padding: '7px 16px',
-                fontSize: '12px',
-                fontFamily: 'IBM Plex Sans, sans-serif',
-                fontWeight: 600,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                color: 'var(--bg)',
-                background: 'var(--text)',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className="btn-primary"
+              style={{ fontSize: '13px' }}
             >
-              New Investigation
+              + New Investigation
             </button>
           </nav>
         </div>
       </header>
 
-      {/* ── Screen Container ─────────────────────────────────────── */}
+      {/* ── Main Screen Container ─────────────────────────────────── */}
       <main style={{ flex: 1, maxWidth: '72rem', width: '100%', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {currentScreen === 'landing' && (
           <LandingScreen onStartNew={handleStartNew} onSelectInvestigation={handleSelectInvestigation} />
@@ -144,15 +161,14 @@ export const App: React.FC = () => {
       {/* ── Footer ───────────────────────────────────────────────── */}
       <footer style={{
         borderTop: '1px solid var(--border)',
-        padding: '1rem 1.5rem',
+        backgroundColor: 'var(--surface)',
+        padding: '1.25rem 1.5rem',
         textAlign: 'center',
         fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '10px',
-        color: 'var(--text-dim)',
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
+        fontSize: '11px',
+        color: 'var(--text-muted)',
       }}>
-        EvidenceOS &bull; Autonomous Evidence Acquisition &bull; x402 Protocol &bull; Base Sepolia Testnet
+        EvidenceOS &bull; Autonomous Evidence Acquisition Platform &bull; Base Sepolia Testnet (Chain ID 84532)
       </footer>
     </div>
   );

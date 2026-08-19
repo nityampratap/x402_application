@@ -2,83 +2,212 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ──────────────────────────────────────────────── */
+/* ── Design Tokens ────────────────────────────────────────────────── */
 :root {
-  --bg:          #0B0B0C;
-  --surface:     #141414;
-  --surface-2:   #1C1C1D;
-  --border:      #2A2A2B;
-  --border-subtle: #1F1F20;
-  --text:        #EDEAE4;
-  --text-muted:  #7A7671;
-  --text-dim:    #4A4744;
-  --accent:      #D8A13B;   /* amber — tags/labels only */
-  --stamp:       #A3311F;   /* verified/danger stamp */
-  --confidence:  #4C7A5E;   /* success green */
+  --bg:            #FAF9F6;   /* warm off-white, not pure white */
+  --surface:       #FFFFFF;
+  --surface-tint:  #FCEEF0;   /* subtle baby pink wash, background only */
+  --border:        #E5E1DC;
+  --border-subtle: #F0EDE8;
+  --text:          #201F1D;
+  --text-muted:    #6B6660;
+  --text-dim:      #9B958C;
+  --accent:        #2F5FE0;   /* blue — primary interactive color only */
+  --accent-hover:  #274DBB;
+  --accent-light:  #EFF4FE;   /* subtle blue wash for active states */
+  --success:       #3E7A5C;
+  --success-light: #F0F7F3;
+  --danger:        #B23B2E;
+  --danger-light:  #FDF2F1;
 }
 
-/* ── Base resets ─────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+/* ── Base Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-html { -webkit-font-smoothing: antialiased; }
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 body {
   margin: 0;
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 15px;
   line-height: 1.6;
 }
 
-/* ── Typography system ───────────────────────────────────────────── */
-.font-display { font-family: 'Fraunces', Georgia, serif; }
-.font-body    { font-family: 'IBM Plex Sans', sans-serif; }
-.font-data    { font-family: 'JetBrains Mono', monospace; }
+/* ── Typography System ───────────────────────────────────────────── */
+.font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
 
-/* ── Stamp SVG animation ─────────────────────────────────────────── */
-@keyframes stamp-in {
-  0%   { transform: rotate(-12deg) scale(1.35); opacity: 0; }
-  60%  { transform: rotate(-12deg) scale(0.95); opacity: 1; }
-  80%  { transform: rotate(-12deg) scale(1.02); }
-  100% { transform: rotate(-12deg) scale(1);    opacity: 1; }
+.font-body {
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.font-data {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Cards System ────────────────────────────────────────────────── */
+/* Primary content card: subtle shadow + white surface */
+.card-primary {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px -2px rgba(32, 31, 29, 0.05), 0 2px 6px -1px rgba(32, 31, 29, 0.03);
+  border-radius: 12px;
+}
+
+/* Secondary card: thin border only, no shadow */
+.card-secondary {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Tinted hero / callout wash card: baby pink background */
+.card-tint {
+  background-color: var(--surface-tint);
+  border: 1px solid #F5DDE2;
+  border-radius: 16px;
+}
+
+/* ── Buttons System ──────────────────────────────────────────────── */
+/* Primary CTA button: Solid Blue (#2F5FE0) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--accent);
+  color: #FFFFFF;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary outline button */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--surface);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background-color: var(--bg);
+}
+
+/* ── Custom Range Slider ─────────────────────────────────────────── */
+.custom-range-container {
+  position: relative;
+  width: 100%;
+  padding: 10px 0;
+}
+
+input[type=range].custom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Webkit Slider Thumb */
+input[type=range].custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(47, 95, 224, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type=range].custom-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--accent-hover);
+}
+
+/* Firefox Slider Thumb */
+input[type=range].custom-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(47, 95, 224, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+/* ── Rubber Stamp Animation & Style ──────────────────────────────── */
+@keyframes stamp-bounce {
+  0%   { transform: rotate(-12deg) scale(1.4); opacity: 0; }
+  65%  { transform: rotate(-12deg) scale(0.96); opacity: 1; }
+  85%  { transform: rotate(-12deg) scale(1.03); }
+  100% { transform: rotate(-12deg) scale(1); opacity: 1; }
 }
 
 .stamp-graphic {
-  animation: stamp-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: center;
+  animation: stamp-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transform-origin: center center;
 }
 
-/* ── Scrollbar styling ───────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3A3A3B; }
-
-/* ── Selection ───────────────────────────────────────────────────── */
-::selection { background: var(--accent); color: #000; }
-
-/* ── Range slider forensic style ────────────────────────────────── */
-input[type=range] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
+/* ── Scrollbars ──────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-input[type=range]::-webkit-slider-runnable-track {
-  height: 3px;
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 3px;
 }
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  background: var(--accent);
-  border-radius: 0;
-  margin-top: -5.5px;
-  cursor: pointer;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
 }
-input[type=range]:focus { outline: none; }
 
-/* ── Utility: ruled section separator ──────────────────────────── */
-.ruled { border-top: 1px solid var(--border); }
+::selection {
+  background: var(--accent-light);
+  color: var(--accent);
+}
