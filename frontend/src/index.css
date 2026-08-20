@@ -6,7 +6,7 @@
 :root {
   --bg:            #FAF9F6;   /* warm off-white, not pure white */
   --surface:       #FFFFFF;
-  --surface-tint:  #FCEEF0;   /* subtle baby pink wash, background only */
+  --surface-tint:  #F0EFF4;   /* subtle greyish wash, background only */
   --border:        #E5E1DC;
   --border-subtle: #F0EDE8;
   --text:          #201F1D;
@@ -69,10 +69,10 @@ body {
   border-radius: 8px;
 }
 
-/* Tinted hero / callout wash card: baby pink background */
+/* Tinted hero / callout wash card: greyish wash background */
 .card-tint {
   background-color: var(--surface-tint);
-  border: 1px solid #F5DDE2;
+  border: 1px solid #E2DFE8;
   border-radius: 16px;
 }
 
