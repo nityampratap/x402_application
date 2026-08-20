@@ -3,10 +3,27 @@ import { LandingScreen } from './components/LandingScreen';
 import { SubmitClaimScreen } from './components/SubmitClaimScreen';
 import { LiveActivityScreen } from './components/LiveActivityScreen';
 import { FinalReportScreen } from './components/FinalReportScreen';
+import { LineSidebar } from './components/LineSidebar';
 import { createInvestigation, getInvestigation } from './services/api';
 import { Investigation } from './types';
 
 type ScreenType = 'landing' | 'submit' | 'activity' | 'report';
+
+const NAV_ITEMS = ['Case Files', 'New Investigation', 'Live Stream', 'Final Report'];
+
+const SCREEN_INDEX_MAP: Record<ScreenType, number> = {
+  landing: 0,
+  submit: 1,
+  activity: 2,
+  report: 3
+};
+
+const INDEX_SCREEN_MAP: Record<number, ScreenType> = {
+  0: 'landing',
+  1: 'submit',
+  2: 'activity',
+  3: 'report'
+};
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('landing');
@@ -54,6 +71,17 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSidebarClick = (index: number) => {
+    const targetScreen = INDEX_SCREEN_MAP[index];
+    if (targetScreen === 'activity' && !selectedInvestigationId) {
+      return; // Can't go to live activity without selected ID
+    }
+    if (targetScreen === 'report' && !currentInvestigation) {
+      return; // Can't go to report without selected investigation
+    }
+    setCurrentScreen(targetScreen);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
 
@@ -67,7 +95,7 @@ export const App: React.FC = () => {
         padding: '0 1.5rem',
       }}>
         <div style={{
-          maxWidth: '72rem',
+          maxWidth: '78rem',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
@@ -142,21 +170,46 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* ── Main Screen Container ─────────────────────────────────── */}
-      <main style={{ flex: 1, maxWidth: '72rem', width: '100%', margin: '0 auto', padding: '2rem 1.5rem' }}>
-        {currentScreen === 'landing' && (
-          <LandingScreen onStartNew={handleStartNew} onSelectInvestigation={handleSelectInvestigation} />
-        )}
-        {currentScreen === 'submit' && (
-          <SubmitClaimScreen onSubmit={handleSubmitClaim} onBack={() => setCurrentScreen('landing')} loading={loading} />
-        )}
-        {currentScreen === 'activity' && selectedInvestigationId && (
-          <LiveActivityScreen investigationId={selectedInvestigationId} onViewReport={handleViewReportFromActivity} />
-        )}
-        {currentScreen === 'report' && currentInvestigation && (
-          <FinalReportScreen investigation={currentInvestigation} onNewInvestigation={handleStartNew} />
-        )}
-      </main>
+      {/* ── Main Layout Container (Sidebar + Content) ────────────── */}
+      <div style={{ flex: 1, maxWidth: '78rem', width: '100%', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', gap: '3rem' }}>
+        
+        {/* Left Sidebar Menu (LineSidebar) */}
+        <aside style={{ width: '220px', flexShrink: 0, display: 'none' }} className="md:block">
+          <div style={{ position: 'sticky', top: '96px' }}>
+            <div className="font-data" style={{ fontSize: '10px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingLeft: '40px' }}>
+              System Navigation
+            </div>
+
+            <LineSidebar
+              items={NAV_ITEMS}
+              activeItemIndex={SCREEN_INDEX_MAP[currentScreen]}
+              onItemClick={handleSidebarClick}
+              accentColor="var(--accent, #2F5FE0)"
+              textColor="var(--text-muted, #6B6660)"
+              markerColor="var(--border, #E5E1DC)"
+              proximityRadius={90}
+              maxShift={20}
+              smoothing={90}
+            />
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main style={{ flex: 1, minWidth: 0 }}>
+          {currentScreen === 'landing' && (
+            <LandingScreen onStartNew={handleStartNew} onSelectInvestigation={handleSelectInvestigation} />
+          )}
+          {currentScreen === 'submit' && (
+            <SubmitClaimScreen onSubmit={handleSubmitClaim} onBack={() => setCurrentScreen('landing')} loading={loading} />
+          )}
+          {currentScreen === 'activity' && selectedInvestigationId && (
+            <LiveActivityScreen investigationId={selectedInvestigationId} onViewReport={handleViewReportFromActivity} />
+          )}
+          {currentScreen === 'report' && currentInvestigation && (
+            <FinalReportScreen investigation={currentInvestigation} onNewInvestigation={handleStartNew} />
+          )}
+        </main>
+      </div>
 
       {/* ── Footer ───────────────────────────────────────────────── */}
       <footer style={{
