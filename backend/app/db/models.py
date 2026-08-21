@@ -34,6 +34,7 @@ class Investigation(Base):
     overall_confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     total_spend_usdc: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     max_budget_usdc: Mapped[float] = mapped_column(Float, default=0.01, nullable=False)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -75,6 +76,8 @@ class EvidenceItem(Base):
     content_summary: Mapped[str] = mapped_column(Text, nullable=False)
     raw_data_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     reliability_score: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
+    stance: Mapped[Optional[str]] = mapped_column(String(20), default="insufficient", nullable=True)
+    stance_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     investigation: Mapped["Investigation"] = relationship("Investigation", back_populates="evidence_items")

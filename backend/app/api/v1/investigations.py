@@ -29,6 +29,7 @@ async def create_investigation(
     investigation = Investigation(
         claim_text=payload.claim,
         max_budget_usdc=payload.max_budget_usdc if payload.max_budget_usdc is not None else 0.01,
+        image_url=payload.image_url,
         status=InvestigationStatus.PENDING
     )
     db.add(investigation)

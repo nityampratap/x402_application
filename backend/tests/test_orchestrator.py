@@ -33,7 +33,7 @@ async def test_full_investigation_orchestration():
         assert inv.status == InvestigationStatus.COMPLETED
         assert inv.overall_confidence_score is not None
         assert inv.overall_confidence_score > 0.0
-        assert len(inv.agent_runs) == 2
+        assert len(inv.agent_runs) >= 2
         assert len(inv.evidence_items) >= 1
         assert len(inv.payment_logs) >= 1
 

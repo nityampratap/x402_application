@@ -1,5 +1,5 @@
 from typing import Protocol, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class AgentResult:
@@ -12,6 +12,9 @@ class AgentResult:
     source_url: str
     is_paid_source: bool
     reliability_score: float  # 0.0 - 1.0
+    # --- Stance fields: how does this evidence relate to the ORIGINAL claim? ---
+    stance: str = "insufficient"  # "supports", "contradicts", "neutral", "insufficient"
+    stance_reason: str = ""       # One-sentence justification for the stance
     error_message: Optional[str] = None
     execution_time_ms: int = 0
     tx_hash: Optional[str] = None
@@ -28,3 +31,5 @@ class BaseEvidenceAgent(Protocol):
     ) -> AgentResult:
         """Executes evidence gathering for a sub-question."""
         ...
+
+BaseAgent = BaseEvidenceAgent

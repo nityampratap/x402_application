@@ -1,12 +1,13 @@
 import { Investigation, PaymentLog } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_HOST = window.location.hostname || 'localhost';
+const API_BASE_URL = `http://${API_HOST}:8000/api/v1`;
 
-export async function createInvestigation(claim: string, max_budget_usdc: number = 0.01): Promise<Investigation> {
+export async function createInvestigation(claim: string, max_budget_usdc: number = 0.01, image_url?: string): Promise<Investigation> {
   const res = await fetch(`${API_BASE_URL}/investigations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ claim, max_budget_usdc })
+    body: JSON.stringify({ claim, max_budget_usdc, image_url: image_url || null })
   });
 
   if (!res.ok) {

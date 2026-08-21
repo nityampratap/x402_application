@@ -58,10 +58,10 @@ export const LiveActivityScreen: React.FC<LiveActivityScreenProps> = ({ investig
   const latestPayment = paymentLogs.length > 0 ? paymentLogs[paymentLogs.length - 1] : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
       {/* ── Case Header & Status Banner ────────────────────────────── */}
-      <div className="card-primary" style={{ padding: '2rem' }}>
+      <div className="card-primary feature-card" style={{ padding: '2rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyBetween: 'space-between', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div style={{ flex: 1, minWidth: '280px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>

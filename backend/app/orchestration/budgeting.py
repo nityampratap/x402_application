@@ -20,35 +20,30 @@ class EvidenceBudgetSelector:
             "paid_registry": 0.001
         }
 
-        # Attempt LLM-assisted value score estimation if API key exists
+        # Attempt Multi-LLM assisted value score estimation
         llm_scores = {}
-        if self.settings.CLAUDE_API_KEY and not self.settings.CLAUDE_API_KEY.startswith("sk-ant-api03-template"):
-            try:
-                import anthropic
-                client = anthropic.AsyncAnthropic(api_key=self.settings.CLAUDE_API_KEY)
+        try:
+            prompt = (
+                f"Evaluate the expected information value score (0 to 100) for each candidate evidence source "
+                f"to investigate the following claim.\n\n"
+                f"Claim: \"{claim}\"\n\n"
+                f"Candidate Sources:\n"
+                + "\n".join([f"- Index {i}: [{c['agent_type']}] {c['question']}" for i, c in enumerate(candidates)])
+                + "\n\nReturn ONLY JSON matching schema: {\"scores\": [{\"index\": 0, \"value_score\": 85}, ...]}"
+            )
 
-                prompt = (
-                    f"Evaluate the expected information value score (0 to 100) for each candidate evidence source "
-                    f"to investigate the following claim.\n\n"
-                    f"Claim: \"{claim}\"\n\n"
-                    f"Candidate Sources:\n"
-                    + "\n".join([f"- Index {i}: [{c['agent_type']}] {c['question']}" for i, c in enumerate(candidates)])
-                    + "\n\nReturn ONLY JSON matching schema: {\"scores\": [{\"index\": 0, \"value_score\": 85}, ...]}"
-                )
-
-                response = await client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=300,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                parsed = json.loads(response.content[0].text)
+            from app.core.llm import get_llm_engine
+            engine = get_llm_engine()
+            res_text = await engine.generate_completion(prompt, json_mode=True)
+            if res_text:
+                parsed = json.loads(res_text)
                 for item in parsed.get("scores", []):
                     idx = item.get("index")
                     val = item.get("value_score")
                     if idx is not None and val is not None:
                         llm_scores[idx] = float(val)
-            except Exception as e:
-                print(f"[BudgetSelector Notice] LLM scoring fallback used: {e}")
+        except Exception as e:
+            print(f"[BudgetSelector Notice] LLM scoring fallback used: {e}")
 
         # Fallback / heuristic scoring logic
         for i, c in enumerate(candidates):

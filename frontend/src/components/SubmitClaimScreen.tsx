@@ -16,13 +16,51 @@ const PRESETS = [0.001, 0.002, 0.005, 0.010];
 
 export const SubmitClaimScreen: React.FC<SubmitClaimScreenProps> = ({ onSubmit, onBack, loading }) => {
   const [claim, setClaim] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [selectedFileSize, setSelectedFileSize] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [budgetUsdc, setBudgetUsdc] = useState(0.002);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Calculate human readable file size
+    const sizeKb = (file.size / 1024).toFixed(1);
+    setSelectedFileName(file.name);
+    setSelectedFileSize(`${sizeKb} KB`);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setImageUrl(dataUrl);
+      if (file.type.startsWith('image/')) {
+        setImagePreview(dataUrl);
+      } else {
+        setImagePreview(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearFile = () => {
+    setImageUrl('');
+    setSelectedFileName(null);
+    setSelectedFileSize(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!claim.trim()) return;
-    onSubmit(claim.trim(), budgetUsdc);
+    onSubmit(claim.trim(), budgetUsdc, imageUrl);
   };
 
   // Calculate percentage fill for custom slider background track
@@ -31,31 +69,43 @@ export const SubmitClaimScreen: React.FC<SubmitClaimScreenProps> = ({ onSubmit, 
   const sliderPercentage = ((budgetUsdc - minBudget) / (maxBudget - minBudget)) * 100;
 
   return (
-    <div style={{ maxWidth: '44rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="animate-fade-in" style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* Top Back Nav */}
       <div>
         <button
           onClick={onBack}
           className="btn-secondary"
-          style={{ fontSize: '13px', padding: '6px 14px' }}
+          style={{ fontSize: '13px', padding: '7px 16px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
           &larr; Back to All Cases
         </button>
       </div>
 
-      {/* Main Card */}
-      <div className="card-primary" style={{ padding: '2.5rem 2rem' }}>
-        
-        {/* Screen Header */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 className="font-display" style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.5rem' }}>
-            New Claim Investigation
-          </h2>
-          <p className="font-body" style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-            Our AI reviews your claim, decides what evidence is worth checking, and only buys the sources that fit your budget.
-          </p>
+      {/* Main Browser Mockup Container matching claim_submit_preview */}
+      <div className="browser-frame">
+        <div className="browser-header">
+          <div className="browser-dots">
+            <div className="browser-dot" style={{ backgroundColor: '#FF5F56' }} />
+            <div className="browser-dot" style={{ backgroundColor: '#FFBD2E' }} />
+            <div className="browser-dot" style={{ backgroundColor: '#27C93F' }} />
+          </div>
+          <div className="browser-url-bar">evidenceos.ai / investigations / new-claim</div>
         </div>
+
+        <div style={{ padding: '2.5rem 2.25rem', backgroundColor: 'var(--surface)' }}>
+          {/* Screen Header */}
+          <div style={{ marginBottom: '2rem' }}>
+            <div className="chip-primary" style={{ marginBottom: '0.75rem' }}>
+              STEP 1 &bull; DYNAMIC KNAPSACK SOLVER
+            </div>
+            <h2 className="font-display" style={{ fontSize: '1.85rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.5rem' }}>
+              Submit Claim for Fact-Checking
+            </h2>
+            <p className="font-body" style={{ fontSize: '14.5px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
+              Enter any factual statement. Our AI decomposes the claim, selects optimal evidence sources using a <strong>0/1 Knapsack optimizer</strong>, and purchases paywalled records within your exact budget.
+            </p>
+          </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
@@ -89,11 +139,132 @@ export const SubmitClaimScreen: React.FC<SubmitClaimScreenProps> = ({ onSubmit, 
                 e.target.style.borderColor = 'var(--accent)';
                 e.target.style.boxShadow = '0 0 0 3px var(--accent-light)';
               }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--border)';
-                e.target.style.boxShadow = 'none';
-              }}
             />
+          </div>
+
+          {/* ── Dual Image & File Evidence Reference Option (Device Upload & URL) ────────────── */}
+          <div style={{
+            backgroundColor: 'var(--bg)',
+            border: '1px dashed var(--border)',
+            borderRadius: '10px',
+            padding: '1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            <label className="font-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📁</span> Image & Document Evidence Reference
+              </span>
+              <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-muted)' }}>(Optional Visual AI Agent)</span>
+            </label>
+
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.txt"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+
+            {/* Selected File Badge / Preview or Choose Options */}
+            {selectedFileName ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'space-between',
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--accent)',
+                borderRadius: '8px',
+                padding: '10px 14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {imagePreview ? (
+                    <img
+                      src={imagePreview}
+                      alt="Selected preview"
+                      style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border)' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--accent-light)',
+                      color: 'var(--accent)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'center',
+                      fontSize: '20px'
+                    }}>
+                      📄
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{selectedFileName}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{selectedFileSize} &bull; Ready for Multimodal Vision Agent</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleClearFile}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Remove &times;
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn-secondary"
+                  style={{
+                    fontSize: '13px',
+                    padding: '9px 16px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: 'var(--surface)'
+                  }}
+                >
+                  <span>📷</span> Upload Image / File from Device
+                </button>
+
+                <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>or paste link:</span>
+
+                {/* URL Input */}
+                <input
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://.../photo.jpg or document link..."
+                  style={{
+                    flex: 1,
+                    minWidth: '220px',
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    color: 'var(--text)',
+                    fontFamily: 'IBM Plex Sans, sans-serif',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* ── Sample Claims as Clickable Chip Buttons ──────────── */}
@@ -315,6 +486,7 @@ export const SubmitClaimScreen: React.FC<SubmitClaimScreenProps> = ({ onSubmit, 
             )}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

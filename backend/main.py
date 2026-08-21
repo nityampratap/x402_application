@@ -21,8 +21,23 @@ async def lifespan(app: FastAPI):
     # Initialize DB tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Auto-migrate SQLite schema if evidence_items table missing stance columns
+        from sqlalchemy import text
+        try:
+            await conn.execute(text("ALTER TABLE evidence_items ADD COLUMN stance VARCHAR(20) DEFAULT 'insufficient'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE evidence_items ADD COLUMN stance_reason TEXT"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE investigations ADD COLUMN image_url TEXT"))
+        except Exception:
+            pass
     yield
 
+# Auto-reload trigger - ImageAnalysisAgent & clean search query active
 app = FastAPI(
     title="EvidenceOS Backend API",
     description="Autonomous Evidence Purchasing Platform powered by x402 Micropayments",
@@ -32,7 +47,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,19 +100,39 @@ async def health_check():
 # Real x402 Paywalled Registry Endpoint
 @app.get("/api/v1/registry", tags=["x402 Paywalled Provider"])
 async def registry_endpoint(q: str = ""):
-    return {
-        "status": "VERIFIED_RECORD_ACCESS",
-        "provider": "Global Financial & Corporate Registry",
-        "query": q,
-        "filing_id": "REG-SEPOLIA-2026-X402",
-        "record_details": {
-            "entity_name": "Acme Corp / Target Entity",
-            "incorporation_date": "2021-03-15",
-            "status": "ACTIVE_GOOD_STANDING",
-            "certified_audit": "2025-12-31",
-            "confirmed_m_and_a_filing": True
+    query_lower = q.lower()
+    
+    # Check if query contains recognized corporate keywords or entities
+    has_filing = any(kw in query_lower for kw in ["acme", "startup", "tesla", "apple", "microsoft", "google", "amazon", "meta", "nvidia", "acquisition", "m&a", "merger", "earnings", "sec", "filing"])
+    
+    if has_filing:
+        return {
+            "status": "VERIFIED_RECORD_ACCESS",
+            "provider": "Global Financial & Corporate Registry",
+            "query": q,
+            "filing_id": f"REG-SEPOLIA-2026-X402-{abs(hash(q)) % 100000}",
+            "record_details": {
+                "entity_name": q,
+                "status": "ACTIVE_GOOD_STANDING",
+                "certified_audit": "2025-12-31",
+                "confirmed_m_and_a_filing": True,
+                "confidence_weight": 0.95
+            }
         }
-    }
+    else:
+        return {
+            "status": "NO_RECORD_FOUND",
+            "provider": "Global Financial & Corporate Registry",
+            "query": q,
+            "filing_id": "NONE",
+            "record_details": {
+                "entity_name": q,
+                "status": "NO_OFFICIAL_FILING_FOUND",
+                "certified_audit": None,
+                "confirmed_m_and_a_filing": False,
+                "confidence_weight": 0.20
+            }
+        }
 
 # Real x402 Paywalled News Endpoint — calls NewsAPI.org internally once payment clears
 @app.get("/api/v1/paid-news", tags=["x402 Paywalled Provider"])

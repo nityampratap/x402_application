@@ -39,6 +39,8 @@ export interface EvidenceItem {
   is_paid: boolean;
   content_summary: string;
   reliability_score: number;
+  stance?: 'supports' | 'contradicts' | 'neutral' | 'insufficient';
+  stance_reason?: string;
   created_at: string;
 }
 

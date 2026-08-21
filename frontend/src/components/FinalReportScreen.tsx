@@ -101,7 +101,7 @@ export const FinalReportScreen: React.FC<FinalReportScreenProps> = ({ investigat
   timelineEvents.sort((a, b) => a.timestamp - b.timestamp);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
       {/* ── Report Header ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
@@ -226,6 +226,23 @@ export const FinalReportScreen: React.FC<FinalReportScreenProps> = ({ investigat
                       }}>
                         {item.is_paid ? 'Paid Source ($0.0010 USDC)' : 'Open Source'}
                       </span>
+
+                      {/* Stance Badge */}
+                      {item.stance && (
+                        <span className="font-data" style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.03em',
+                          backgroundColor: item.stance === 'supports' ? '#E8F5E9' : item.stance === 'contradicts' ? '#FFEBEE' : '#F5F5F5',
+                          color: item.stance === 'supports' ? '#2E7D32' : item.stance === 'contradicts' ? '#C62828' : '#757575',
+                          border: `1px solid ${item.stance === 'supports' ? '#A5D6A7' : item.stance === 'contradicts' ? '#EF9A9A' : '#E0E0E0'}`
+                        }}>
+                          {item.stance === 'supports' ? '✓ Supports' : item.stance === 'contradicts' ? '✗ Contradicts' : item.stance === 'neutral' ? '— Neutral' : '? Insufficient'}
+                        </span>
+                      )}
                     </div>
 
                     <a
@@ -242,6 +259,13 @@ export const FinalReportScreen: React.FC<FinalReportScreenProps> = ({ investigat
                   <p className="font-body" style={{ fontSize: '14px', color: 'var(--text)', margin: '4px 0 0', lineHeight: 1.6 }}>
                     {item.content_summary}
                   </p>
+
+                  {/* Stance Reason */}
+                  {item.stance_reason && (
+                    <p className="font-body" style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.5, fontStyle: 'italic' }}>
+                      Stance Analysis: {item.stance_reason}
+                    </p>
+                  )}
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '4px' }}>
                     <span className="font-body" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>

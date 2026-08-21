@@ -47,10 +47,10 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSubmitClaim = async (claimText: string, budgetUsdc: number) => {
+  const handleSubmitClaim = async (claimText: string, budgetUsdc: number, imageUrl?: string) => {
     setLoading(true);
     try {
-      const newInv = await createInvestigation(claimText, budgetUsdc);
+      const newInv = await createInvestigation(claimText, budgetUsdc, imageUrl);
       setCurrentInvestigation(newInv);
       setSelectedInvestigationId(newInv.id);
       setCurrentScreen('activity');

@@ -19,6 +19,7 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; color: string; b
 export const LandingScreen: React.FC<LandingScreenProps> = ({ onStartNew, onSelectInvestigation }) => {
   const [history, setHistory] = useState<Investigation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showArchDetails, setShowArchDetails] = useState(false);
 
   useEffect(() => {
     listInvestigations()
@@ -28,89 +29,338 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStartNew, onSele
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem', paddingBottom: '3rem' }}>
 
-      {/* ── Hero Section (Baby Pink Tint Wash Background) ────────── */}
-      <section className="card-tint" style={{ padding: '3rem 2.5rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '44rem', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          
-          <div className="font-data" style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.75rem' }}>
-            Autonomous Micro-Payment Verification
-          </div>
+      {/* ── 1. HERO SECTION (Hackviser Hero Pattern with Real Product Screenshot) ── */}
+      <section className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        
+        {/* Top Eyebrow Tag */}
+        <div className="chip-primary" style={{ marginBottom: '1.25rem' }}>
+          <span>★</span> Autonomous AI Agent Verification Platform
+        </div>
 
-          {/* Centered Main Title */}
-          <h1 className="font-display" style={{
-            fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
-            fontWeight: 600,
-            lineHeight: 1.15,
-            color: 'var(--text)',
-            margin: '0 0 0.5rem',
-          }}>
-            EvidenceOS
-          </h1>
+        {/* Main Display Headline */}
+        <h1 className="font-display" style={{
+          fontSize: 'clamp(2.5rem, 5.5vw, 4rem)',
+          fontWeight: 600,
+          lineHeight: 1.12,
+          color: 'var(--text)',
+          margin: '0 0 1.25rem',
+          maxWidth: '22ch'
+        }}>
+          Autonomous Evidence <span style={{ color: 'var(--accent)' }}>Investigation</span> & Micropayments
+        </h1>
 
-          {/* Small, Restrained Descriptor */}
-          <p className="font-body" style={{ fontSize: '15px', color: 'var(--text-muted)', margin: '0 0 1.5rem', fontWeight: 400 }}>
-            Autonomous Evidence Investigation
-          </p>
+        {/* Subtitle / Value Proposition */}
+        <p className="font-body" style={{
+          fontSize: '17px',
+          color: 'var(--text-muted)',
+          lineHeight: 1.6,
+          margin: '0 0 2.25rem',
+          maxWidth: '52ch'
+        }}>
+          Our AI reviews your claim, allocates spending dynamically via an <strong>Optimal 0/1 Knapsack</strong>, and purchases paywalled evidence on-chain using <strong>x402 Micropayments</strong>.
+        </p>
 
-          {/* Plain Language Summary */}
-          <p className="font-body" style={{ fontSize: '15px', color: 'var(--text)', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '36ch' }}>
-            Our AI reviews your claim, decides what evidence is worth checking, and only buys the sources that fit your budget.
-          </p>
-
+        {/* CTA Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '3rem' }}>
           <button
             id="start-investigation-btn"
             onClick={onStartNew}
             className="btn-primary"
-            style={{ fontSize: '15px', padding: '12px 28px' }}
+            style={{ fontSize: '15px', padding: '13px 32px' }}
           >
             Start New Investigation &rarr;
           </button>
+          <a
+            href="#how-it-works"
+            className="btn-secondary"
+            style={{ fontSize: '15px', padding: '12px 24px', textDecoration: 'none' }}
+          >
+            Explore Platform Features &darr;
+          </a>
+        </div>
+
+        {/* ── Real Product UI Preview Container (Browser Frame) ── */}
+        <div style={{ width: '100%', maxWidth: '58rem' }}>
+          <div className="browser-frame">
+            <div className="browser-header">
+              <div className="browser-dots">
+                <div className="browser-dot" style={{ backgroundColor: '#FF5F56' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#FFBD2E' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#27C93F' }} />
+              </div>
+              <div className="browser-url-bar">
+                evidenceos.ai / investigations / live-report-preview
+              </div>
+            </div>
+            <div style={{ position: 'relative', overflow: 'hidden', backgroundColor: 'var(--surface)' }}>
+              <img
+                src="/assets/hero_screenshot.jpg"
+                alt="EvidenceOS Final Investigation Report Dashboard"
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── Feature Highlights (No 01/02/03 Numbering, Centered Headings, HR Separator) ── */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
-          <h2 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            How EvidenceOS Operates
+
+      {/* ── 2. REAL SOCIAL PROOF / HACKATHON BADGES ROW ───────────────────────── */}
+      <section className="card-secondary" style={{ padding: '1.25rem 2rem', backgroundColor: '#F9F8F5' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          gap: '1.5rem',
+          flexWrap: 'wrap',
+          textAlign: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>⚡</span>
+            <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
+              Base Sepolia Testnet (84532)
+            </span>
+          </div>
+
+          <div style={{ height: '16px', width: '1px', backgroundColor: 'var(--border)' }} className="hidden md:block" />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>💳</span>
+            <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
+              x402 Open Protocol Standard
+            </span>
+          </div>
+
+          <div style={{ height: '16px', width: '1px', backgroundColor: 'var(--border)' }} className="hidden md:block" />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>🧠</span>
+            <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
+              Stance-Aware AI Reasoning
+            </span>
+          </div>
+
+          <div style={{ height: '16px', width: '1px', backgroundColor: 'var(--border)' }} className="hidden md:block" />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>🛡️</span>
+            <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Production Enterprise Edition
+            </span>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ── 3. ALTERNATING FEATURE EXPLANATIONS (Hackviser Feature Layout Pattern) ── */}
+      <section id="how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+        
+        {/* Section Header */}
+        <div style={{ textAlign: 'center', maxWidth: '36rem', margin: '0 auto' }}>
+          <div className="chip-primary" style={{ marginBottom: '0.75rem' }}>
+            ARCHITECTURE & WORKFLOW
+          </div>
+          <h2 className="font-display" style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.5rem' }}>
+            How <span style={{ color: 'var(--accent)' }}>EvidenceOS</span> Operates
           </h2>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
+          <p className="font-body" style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
+            An end-to-end pipeline connecting autonomous AI agents with HTTP 402 paywall settlement.
+          </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
-          <div className="card-secondary" style={{ padding: '1.75rem 1.5rem', textAlign: 'center' }}>
-            <h3 className="font-body" style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', margin: '0 0 0.5rem' }}>
-              On-Chain Payments
+        {/* Feature 1: Text Left, Image Right */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="chip-primary" style={{ width: 'fit-content' }}>
+              STEP 1 &bull; DYNAMIC KNAPSACK SOLVER
+            </div>
+            <h3 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+              Claim Decomposition & Budget Allocation
             </h3>
-            <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
-              A real, cryptographically signed payment for paywalled evidence — verifiable on the blockchain.
+            <p className="font-body" style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.65, margin: 0 }}>
+              Submit any complex factual statement and define your spending limit (e.g. <strong>$0.005 USDC</strong>). The AI planner decomposes the claim into targeted search sub-questions and evaluates available evidence candidates using an <strong>0/1 Knapsack optimization algorithm</strong>.
             </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Knapsack Optimization:</strong> Maximizes total evidence value within exact USDC budget.
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Custom Spending Limit:</strong> Interactive range slider ($0.001 – $0.050 USDC).
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="card-secondary" style={{ padding: '1.75rem 1.5rem', textAlign: 'center' }}>
-            <h3 className="font-body" style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', margin: '0 0 0.5rem' }}>
-              Smart Budget Allocation
-            </h3>
-            <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
-              We automatically pick the most valuable evidence within your custom spending limit.
-            </p>
-          </div>
-
-          <div className="card-secondary" style={{ padding: '1.75rem 1.5rem', textAlign: 'center' }}>
-            <h3 className="font-body" style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', margin: '0 0 0.5rem' }}>
-              Verifiable Audit Trail
-            </h3>
-            <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
-              Every transaction, evidence item, and decision is recorded with complete transparency.
-            </p>
+          <div className="browser-frame">
+            <div className="browser-header">
+              <div className="browser-dots">
+                <div className="browser-dot" style={{ backgroundColor: '#FF5F56' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#FFBD2E' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#27C93F' }} />
+              </div>
+              <div className="browser-url-bar">evidenceos.ai / submit-claim</div>
+            </div>
+            <img src="/assets/claim_submit_preview.jpg" alt="Claim Submission Screen Preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         </div>
+
+        {/* Feature 2: Image Left, Text Right */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div className="browser-frame" style={{ order: 2 }}>
+            <div className="browser-header">
+              <div className="browser-dots">
+                <div className="browser-dot" style={{ backgroundColor: '#FF5F56' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#FFBD2E' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#27C93F' }} />
+              </div>
+              <div className="browser-url-bar">evidenceos.ai / live-investigation-stream</div>
+            </div>
+            <img src="/assets/live_agent_preview.jpg" alt="Live Investigation Activity Preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', order: 1 }}>
+            <div className="chip-primary" style={{ width: 'fit-content' }}>
+              STEP 2 &bull; ON-CHAIN X402 MICROPAYMENTS
+            </div>
+            <h3 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+              Parallel Agent Dispatch & On-Chain Settlement
+            </h3>
+            <p className="font-body" style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.65, margin: 0 }}>
+              Autonomous <strong>Web Search</strong> and <strong>Financial Registry Agents</strong> execute concurrently in parallel. When encountering paywalled APIs, agents generate EIP-712 cryptographic signatures and settle <strong>x402 HTTP micropayments</strong> on Base Sepolia in real-time.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Parallel Execution:</strong> Agents gather open-source and paywalled data simultaneously.
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Real-Time SSE Broadcast:</strong> Live event log stream delivered to the UI.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature 3: Text Left, Image Right */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="chip-primary" style={{ width: 'fit-content' }}>
+              STEP 3 &bull; STANCE-AWARE REASONING
+            </div>
+            <h3 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+              Stance Analysis & Verifiable Audit Report
+            </h3>
+            <p className="font-body" style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.65, margin: 0 }}>
+              Gathered evidence is evaluated for explicit stance relative to the claim: <strong>SUPPORTS</strong>, <strong>CONTRADICTS</strong>, or <strong>NEUTRAL</strong>. Contradicting evidence actively lowers confidence scores, preventing false positives and producing clear, auditable verdicts.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Stance Badges:</strong> Clear green / red badges showing exact AI stance justification.
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                <span className="font-body" style={{ fontSize: '13.5px', color: 'var(--text)' }}>
+                  <strong>Transparent Audit Log:</strong> Complete record of transaction hashes, costs, and sources.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="browser-frame">
+            <div className="browser-header">
+              <div className="browser-dots">
+                <div className="browser-dot" style={{ backgroundColor: '#FF5F56' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#FFBD2E' }} />
+                <div className="browser-dot" style={{ backgroundColor: '#27C93F' }} />
+              </div>
+              <div className="browser-url-bar">evidenceos.ai / final-report-summary</div>
+            </div>
+            <img src="/assets/evidence_report_preview.jpg" alt="Final Evidence Report Dashboard Preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
+          </div>
+        </div>
+
       </section>
 
-      {/* ── Recent Cases History Table ───────────────────────────── */}
+
+      {/* ── 4. EXPANDABLE TECHNICAL ARCHITECTURE DETAILS ───────────────────────── */}
+      <section className="card-secondary" style={{ padding: '1.75rem 2rem' }}>
+        <button
+          onClick={() => setShowArchDetails(!showArchDetails)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 0,
+            textAlign: 'left'
+          }}
+        >
+          <div>
+            <h3 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+              Technical Architecture & Protocol Integration
+            </h3>
+            <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+              Click to inspect technical details of x402 header negotiation, EIP-712 signing, and backend scoring logic.
+            </p>
+          </div>
+          <span style={{ fontSize: '18px', color: 'var(--accent)', transition: 'transform 0.2s ease', transform: showArchDetails ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            ↓
+          </span>
+        </button>
+
+        {showArchDetails && (
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+            <div>
+              <div className="font-data" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>
+                X402 HTTP PROTOCOL
+              </div>
+              <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                Handles HTTP 402 Payment Required status code headers and settles micropayments automatically via official x402 resource server middleware.
+              </p>
+            </div>
+
+            <div>
+              <div className="font-data" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>
+                EIP-712 SIGNATURES
+              </div>
+              <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                Constructs typed structured data signatures with user nonces, ensuring tamper-proof authorization for every paid evidence transaction.
+              </p>
+            </div>
+
+            <div>
+              <div className="font-data" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>
+                0/1 KNAPSACK OPTIMIZER
+              </div>
+              <p className="font-body" style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                Solves dynamic programming allocation to pick maximum value evidence candidates subject to strict spending budget constraints.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+
+
+      {/* ── 5. RECENT INVESTIGATIONS HISTORY TABLE ───────────────────────────── */}
       <section className="card-primary" style={{ padding: '1.75rem 2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
           <div>
@@ -145,6 +395,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStartNew, onSele
                 <button
                   key={inv.id}
                   onClick={() => onSelectInvestigation(inv)}
+                  className="feature-card"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -157,15 +408,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStartNew, onSele
                     cursor: 'pointer',
                     textAlign: 'left',
                     width: '100%',
-                    transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--accent)';
-                    e.currentTarget.style.backgroundColor = 'var(--accent-light)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                    e.currentTarget.style.backgroundColor = 'var(--surface)';
                   }}
                 >
                   {/* Left: Claim & status tag */}
@@ -215,6 +457,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onStartNew, onSele
           </div>
         )}
       </section>
+
     </div>
   );
 };

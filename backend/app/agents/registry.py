@@ -1,12 +1,14 @@
 from typing import Dict, Type
-from app.agents.base import BaseEvidenceAgent
+from app.agents.base import BaseAgent
 from app.agents.web_agent import WebSearchAgent
 from app.agents.financial_agent import FinancialRegistryAgent
+from app.agents.image_agent import ImageAnalysisAgent
 
 class AgentRegistry:
     _registry: Dict[str, Type] = {
         "web_search": WebSearchAgent,
-        "financial_registry": FinancialRegistryAgent
+        "financial_registry": FinancialRegistryAgent,
+        "image_analysis": ImageAnalysisAgent
     }
 
     @classmethod

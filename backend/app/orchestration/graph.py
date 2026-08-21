@@ -46,7 +46,7 @@ class WorkflowOrchestrator:
         await self.emit_event("STATE_CHANGE", investigation_id, {"status": "PLANNING"})
 
         # 2. Planning Node
-        plan = await self.planner.create_plan(investigation.claim_text)
+        plan = await self.planner.create_plan(investigation.claim_text, image_url=investigation.image_url or "")
         
         # 2b. Evidence Budgeting & 0/1 Knapsack Optimization Node
         scored_candidates = await self.budget_selector.estimate_value_scores(
@@ -143,7 +143,12 @@ class WorkflowOrchestrator:
             
             result = await agent_instance.investigate(
                 sub_question=ar.sub_question,
-                context={"investigation_id": investigation_id, "agent_run_id": ar.id}
+                context={
+                    "investigation_id": investigation_id,
+                    "agent_run_id": ar.id,
+                    "original_claim": investigation.claim_text,
+                    "image_url": investigation.image_url
+                }
             )
             
             await self.emit_event("AGENT_COMPLETE", investigation_id, {
@@ -211,13 +216,17 @@ class WorkflowOrchestrator:
                     source_url=result.source_url,
                     is_paid=result.is_paid_source,
                     content_summary=result.evidence_summary,
-                    reliability_score=result.reliability_score
+                    reliability_score=result.reliability_score,
+                    stance=result.stance,
+                    stance_reason=result.stance_reason
                 )
                 self.db.add(ev_item)
                 collected_evidence.append({
                     "content_summary": result.evidence_summary,
                     "reliability_score": result.reliability_score,
-                    "is_paid": result.is_paid_source
+                    "is_paid": result.is_paid_source,
+                    "stance": result.stance,
+                    "stance_reason": result.stance_reason
                 })
 
                 await self.emit_event("EVIDENCE_ADDED", investigation_id, {
@@ -225,7 +234,9 @@ class WorkflowOrchestrator:
                         "source_url": result.source_url,
                         "is_paid": result.is_paid_source,
                         "content_summary": result.evidence_summary,
-                        "reliability_score": result.reliability_score
+                        "reliability_score": result.reliability_score,
+                        "stance": result.stance,
+                        "stance_reason": result.stance_reason
                     }
                 })
 
@@ -236,7 +247,7 @@ class WorkflowOrchestrator:
         await self.db.commit()
         await self.emit_event("STATE_CHANGE", investigation_id, {"status": "SCORING"})
 
-        score_report = self.scorer.calculate_confidence(investigation.claim_text, collected_evidence)
+        score_report = await self.scorer.calculate_confidence_async(investigation.claim_text, collected_evidence)
 
         # 5. Completion
         investigation.status = InvestigationStatus.COMPLETED

@@ -6,8 +6,9 @@ from app.schemas.evidence import EvidenceItemResponse
 from app.schemas.payment import PaymentLogResponse
 
 class InvestigationCreate(BaseModel):
-    claim: str = Field(min_length=5, description="Claim text to autonomously investigate")
+    claim: str = Field(min_length=3, description="Claim text to autonomously investigate")
     max_budget_usdc: Optional[float] = Field(default=0.01, description="Maximum budget allocated in USDC")
+    image_url: Optional[str] = Field(default=None, description="Optional image reference URL for visual verification")
 
 class AgentRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
